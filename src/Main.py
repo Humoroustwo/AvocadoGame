@@ -72,7 +72,7 @@ def mouse_handler(position):
 # ----------------------------------------------------------------------------------------------------------
 
 class Player:
-    def __init__(self, player_num, x, y, width, height, acc, max_speed):
+    def __init__(self, player_num, x, y, width, height, acc, max_speed, max_jump):
         self.x = x
         self.y = y
         self.x_vel = 0
@@ -86,6 +86,7 @@ class Player:
         self.in_col = False
         self.in_air = True
         self.on_ground = False
+        self.max_jump = max_jump
 
     def draw(self, canvas):
         global wall_array
@@ -96,16 +97,18 @@ class Player:
 
 
     def detect_collision(self, x, y, w, h):
-        if ((x + w/2 >= self.x + self.width >= x - w/2) and (y + h/2 >= self.y + self.height >= y - h/2)):
+        if ((x + w+self.width >= self.x + self.width >= x - w/2) and (y + h/2 >= self.y + self.height >= y - h/2)):
             self.in_col = True
         else:
             self.in_col = False
+
+
 
     def collision(self, wall_list):
         if(self.y_vel != 0):
             self.in_air = True
 
-        wall_x = 0 
+        wall_x = 0
         wall_y = 0
         wall_w = 0
         wall_h = 0
@@ -125,9 +128,10 @@ class Player:
                 self.y_vel = 0
                 self.y = wall_y - 2*self.height
 
-        if (wall_x - (0.5 * wall_w) < self.x < wall_x + (0.5 * wall_w)):
+        if ():
             pass
-        else:
+
+        if ((wall_x - (wall_w-self.width)) < self.x < (wall_x + (wall_w))) == False:
             self.on_ground = False
 
         if (not self.on_ground):
@@ -145,11 +149,14 @@ class Player:
                 elif k.inp == "1r":
                     self.accelerate(1)
                     last_pressed = time.time() * 1000
+                elif k.inp == "1j":
+                    self.jump()
             else:
                 if(last_pressed + 100 < time.time()*1000):
                     self.decelerate()
 
             self.x += self.x_vel
+            self.y += self.y_vel
 
     def accelerate(self, move):
         self.x_vel += self.acc*move
@@ -166,6 +173,13 @@ class Player:
             self.x_vel += -self.acc / 2
         if(-self.acc/3 < self.x_vel < self.acc/3):
             self.x_vel = 0
+
+
+    def jump(self):
+        if(self.on_ground):
+            self.in_air = True
+            self.on_ground = False
+            self.y_vel -= self.max_jump
 
 # ----------------------------------------------------------------------------------------------------------
 # GENERIC WALLS
@@ -193,11 +207,11 @@ class Wall():
 # ----------------------------------------------------------------------------------------------------------
 # GAME AND GAME RULES
 # ----------------------------------------------------------------------------------------------------------
-player_one = Player(1, WIDTH/2, HEIGHT/2, 32, 32, 0.2, 1.5)
+player_one = Player(1, WIDTH/2, HEIGHT/2, 32, 32, 0.2, 1.5, 5)
 
 wall_array = []
-for i in range(0, int(WIDTH/64)-7):
-    wall_array.append(Wall(i*64, HEIGHT, 64, 64, test_wall_image))
+for i in range(0, int(WIDTH/64)-10):
+    wall_array.append(Wall(512+i*64, HEIGHT, 64, 64, test_wall_image))
 
 for i in range(0, 6):
     wall_array.append(Wall(i*64, HEIGHT/2, 64, 64, test_wall_image))
@@ -205,7 +219,7 @@ for i in range(0, 6):
 for i in range(0, 6):
     wall_array.append(Wall(WIDTH-(i*64), HEIGHT/2, 64, 64, test_wall_image))
 
-
+wall_array.append(Wall(WIDTH/2, HEIGHT-64, 64,64, test_wall_image))
 class Game:
 
     def __init__(self):
@@ -227,7 +241,7 @@ def display(canvas):
 # SIMPLE GUI FRAME
 # ----------------------------------------------------------------------------------------------------------
 
-frame = simplegui.create_frame('PyPong', WIDTH, HEIGHT)
+frame = simplegui.create_frame('tmp', WIDTH, HEIGHT)
 
 frame.set_canvas_background('rgb(12,50,120)')
 frame._display_fps_average = True
