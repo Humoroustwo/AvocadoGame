@@ -82,7 +82,7 @@ class Player:
         self.max_speed = max_speed
         self.acc = acc
         self.cur_speed = 0
-        self.grav = 0.2
+        self.grav = 0.1
         self.in_col = False
         self.in_air = True
         self.on_ground = False
@@ -93,7 +93,15 @@ class Player:
         global test_player_image
         canvas.draw_image(test_player_image, SP_CENTER, SP_SIZE, (self.x, self.y), SP_SIZE)
         self.control()
-        self.collision(wall_array)
+        self.collision_x(wall_array)
+        self.gravity()
+        self.collision_y(wall_array)
+        self.put_back()
+
+    def put_back(self):
+        if(self.y > HEIGHT):
+            self.y = HEIGHT / 2
+            self.x = WIDTH / 2
 
 
     def detect_collision(self, x, y, w, h):
@@ -102,9 +110,26 @@ class Player:
         else:
             self.in_col = False
 
+    def collision_x(self, wall_list):
+        wall_x = 0
+        wall_y = 0
+        wall_w = 0
+        for wall in wall_list:
+            wall_x = wall.x
+            wall_y = wall.y
+            wall_w = wall.width
+            if(wall_y  >= self.y >= wall_y ):
+                if(wall_x+wall_w > self.x+self.x_vel > wall_x-wall_w):
+                    self.x_vel = 0
+                    if(self.x<wall_x):
+                        self.x = wall_x-wall_w-1
+                    if(self.x>wall_x):
+                        self.x = wall_x+wall_w+1
 
 
-    def collision(self, wall_list):
+
+
+    def collision_y(self, wall_list):
         if(self.y_vel != 0):
             self.in_air = True
 
@@ -119,47 +144,34 @@ class Player:
                 wall_y = wall.y
                 wall_w = wall.width
                 wall.h = wall.height
+                if (self.in_air):
+                    self.in_air = False
+                    self.on_ground = True
+                    self.y_vel = 0
+                    self.y = wall_y - 2 * self.height
                 break
-
-        if (self.in_air):
-            if (self.in_col):
-                self.in_air = False
-                self.on_ground = True
-                self.y_vel = 0
-                self.y = wall_y - 2*self.height
-
-        if ():
-            pass
 
         if ((wall_x - (wall_w-self.width)) < self.x < (wall_x + (wall_w))) == False:
             self.on_ground = False
 
+        for wall in wall_list:
+            wall_x = wall.x
+            wall_y = wall.y
+            wall_w = wall.width
+            wall.h = wall.height
+
+            if (self.y < wall_y + wall_h):
+                print(wall_y)
+
+
+    def gravity(self):
         if (not self.on_ground):
             self.y_vel += self.grav
             self.y += self.y_vel
 
-    def control(self):
-        last_pressed = 0
-        for k in keys:
-            if k.pressed:
-                i=0
-                if k.inp == "1l":
-                    self.accelerate(-1)
-                    last_pressed = time.time() * 1000
-                elif k.inp == "1r":
-                    self.accelerate(1)
-                    last_pressed = time.time() * 1000
-                elif k.inp == "1j":
-                    self.jump()
-            else:
-                if(last_pressed + 100 < time.time()*1000):
-                    self.decelerate()
-
-            self.x += self.x_vel
-            self.y += self.y_vel
-
     def accelerate(self, move):
         self.x_vel += self.acc*move
+        self.collision_x(wall_array)
         if self.x_vel > self.max_speed:
             self.x_vel = self.max_speed
         elif self.x_vel < -self.max_speed:
@@ -173,13 +185,33 @@ class Player:
             self.x_vel += -self.acc / 2
         if(-self.acc/3 < self.x_vel < self.acc/3):
             self.x_vel = 0
-
+        self.collision_x(wall_array)
 
     def jump(self):
         if(self.on_ground):
             self.in_air = True
             self.on_ground = False
             self.y_vel -= self.max_jump
+
+    def control(self):
+        last_pressed = 0
+        for k in keys:
+            if k.pressed:
+                i = 0
+                if k.inp == "1l":
+                    self.accelerate(-1)
+                    last_pressed = time.time() * 1000
+                elif k.inp == "1r":
+                    self.accelerate(1)
+                    last_pressed = time.time() * 1000
+                elif k.inp == "1j":
+                    self.jump()
+            else:
+                if (last_pressed + 100 < time.time() * 1000):
+                    self.decelerate()
+
+            self.x += self.x_vel
+            self.y += self.y_vel
 
 # ----------------------------------------------------------------------------------------------------------
 # GENERIC WALLS
@@ -207,7 +239,7 @@ class Wall():
 # ----------------------------------------------------------------------------------------------------------
 # GAME AND GAME RULES
 # ----------------------------------------------------------------------------------------------------------
-player_one = Player(1, WIDTH/2, HEIGHT/2, 32, 32, 0.2, 1.5, 5)
+player_one = Player(1, WIDTH/2, HEIGHT/2, 32, 32, 0.2, 1.5, 4)
 
 wall_array = []
 for i in range(0, int(WIDTH/64)-10):
@@ -220,6 +252,8 @@ for i in range(0, 6):
     wall_array.append(Wall(WIDTH-(i*64), HEIGHT/2, 64, 64, test_wall_image))
 
 wall_array.append(Wall(WIDTH/2, HEIGHT-64, 64,64, test_wall_image))
+wall_array.append(Wall(WIDTH/2, HEIGHT-128, 64,64, test_wall_image))
+
 class Game:
 
     def __init__(self):
