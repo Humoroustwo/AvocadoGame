@@ -82,8 +82,7 @@ class Player:
         self.max_speed = max_speed
         self.acc = acc
         self.cur_speed = 0
-        self.grav = 0.1
-        self.in_col = False
+        self.grav = 0.2
         self.in_air = True
         self.on_ground = False
         self.max_jump = max_jump
@@ -104,12 +103,6 @@ class Player:
             self.x = WIDTH / 2
 
 
-    def detect_collision(self, x, y, w, h):
-        if ((x + w+self.width >= self.x + self.width >= x - w/2) and (y + h/2 >= self.y + self.height >= y - h/2)):
-            self.in_col = True
-        else:
-            self.in_col = False
-
     def collision_x(self, wall_list):
         wall_x = 0
         wall_y = 0
@@ -118,16 +111,13 @@ class Player:
             wall_x = wall.x
             wall_y = wall.y
             wall_w = wall.width
-            if(wall_y  >= self.y >= wall_y ):
+            if(wall_y +self.height*1.9 >= self.y >= wall_y - self.height):
                 if(wall_x+wall_w > self.x+self.x_vel > wall_x-wall_w):
                     self.x_vel = 0
                     if(self.x<wall_x):
                         self.x = wall_x-wall_w-1
                     if(self.x>wall_x):
                         self.x = wall_x+wall_w+1
-
-
-
 
     def collision_y(self, wall_list):
         if(self.y_vel != 0):
@@ -138,8 +128,8 @@ class Player:
         wall_w = 0
         wall_h = 0
         for wall in wall_list:
-            self.detect_collision(wall.x, wall.y, wall.width, wall.height)
-            if (self.in_col):
+            if ((wall.x + wall.width + self.width >= self.x + self.width >= wall.x - wall.width / 2)
+                and (wall.y + wall.height / 2 >= self.y + self.height >= wall.y - wall.height / 2)):
                 wall_x = wall.x
                 wall_y = wall.y
                 wall_w = wall.width
@@ -160,8 +150,9 @@ class Player:
             wall_w = wall.width
             wall.h = wall.height
 
-            if (self.y < wall_y + wall_h):
-                print(wall_y)
+            if (wall_x - self.width*2 <= self.x <= wall_x + self.width*2
+                and wall_y - self.height/3 < self.y < wall_y + self.height*2):
+                self.y_vel = 0
 
 
     def gravity(self):
