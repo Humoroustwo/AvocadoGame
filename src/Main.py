@@ -11,7 +11,7 @@ last_pressed = current_time+100
 #CONSTANTS
 WIDTH = 1280
 HEIGHT = 720
-REFRESH = 60
+GAMESPEED = 1
 #SPRITE CONSTANTS
 SP_SIZE = [64, 64]
 SP_CENTER = [32, 32]
@@ -68,11 +68,45 @@ def mouse_handler(position):
     mouse_click_pos = position
 
 # ----------------------------------------------------------------------------------------------------------
+# VECTOR CLASS
+# ----------------------------------------------------------------------------------------------------------
+
+class Vector:
+    def __init__(self):
+        self.x_vec = 0 #Vector, not pos
+        self.y_vec = 0 #Vector, not pos
+
+    def accelerate(self, max_speed, acc, dir):
+        self.x_vec += acc*dir
+        if self.x_vec > max_speed:
+            self.x_vec = max_speed
+        elif self.x_vec < -max_speed:
+            self.x_vec = -max_speed
+
+    def decelerate(self, acc):
+        if self.x_vec < 0:
+            self.x_vec += acc / 2
+        elif self.x_vec > 0:
+            self.x_vec += -acc / 2
+        if (-acc / 3 < self.x_vec < acc / 3):
+            self.x_vec = 0
+
+# ----------------------------------------------------------------------------------------------------------
+# ENTITY
+# ----------------------------------------------------------------------------------------------------------
+
+class Entity(Vector):
+    def __init__(self, x, y):
+        Vector.__init__(self)
+        self.x = x
+        self.y = y
+
+# ----------------------------------------------------------------------------------------------------------
 # PLAYER
 # ----------------------------------------------------------------------------------------------------------
 
 class Player:
-    def __init__(self, player_num, x, y, width, height, acc, max_speed, max_jump):
+    def __init__(self, player_num, x, y, width, height, acc, max_speed, max_jump, terminal_velocity):
         self.x = x
         self.y = y
         self.x_vel = 0
@@ -86,8 +120,9 @@ class Player:
         self.in_air = True
         self.on_ground = False
         self.max_jump = max_jump
+        self.t_vel = terminal_velocity
 
-    def draw(self, canvas):
+    def draw(self, canvas): #Specific to simplegui
         global wall_array
         global test_player_image
         canvas.draw_image(test_player_image, SP_CENTER, SP_SIZE, (self.x, self.y), SP_SIZE)
@@ -141,7 +176,7 @@ class Player:
                     self.y = wall_y - 2 * self.height
                 break
 
-        if ((wall_x - (wall_w-self.width)) < self.x < (wall_x + (wall_w))) == False:
+        if ((wall_x - self.width*2) < self.x < (wall_x + self.width*2)) == False:
             self.on_ground = False
 
         for wall in wall_list:
@@ -151,14 +186,15 @@ class Player:
             wall.h = wall.height
 
             if (wall_x - self.width*2 <= self.x <= wall_x + self.width*2
-                and wall_y - self.height/3 < self.y < wall_y + self.height*2):
+                and wall_y < self.y < wall_y + self.height*2.1):
                 self.y_vel = 0
-
 
     def gravity(self):
         if (not self.on_ground):
             self.y_vel += self.grav
-            self.y += self.y_vel
+            if(self.y_vel > self.t_vel): #Terminal velocity
+                self.y_vel = self.t_vel
+            self.y += self.y_vel*GAMESPEED
 
     def accelerate(self, move):
         self.x_vel += self.acc*move
@@ -184,7 +220,7 @@ class Player:
             self.on_ground = False
             self.y_vel -= self.max_jump
 
-    def control(self):
+    def control(self): #Specific to simplegui
         last_pressed = 0
         for k in keys:
             if k.pressed:
@@ -201,15 +237,15 @@ class Player:
                 if (last_pressed + 100 < time.time() * 1000):
                     self.decelerate()
 
-            self.x += self.x_vel
-            self.y += self.y_vel
+            self.x += self.x_vel*GAMESPEED
+            self.y += self.y_vel*GAMESPEED
 
 # ----------------------------------------------------------------------------------------------------------
 # GENERIC WALLS
 # ----------------------------------------------------------------------------------------------------------
 
 class Wall():
-    #This is a "wall" object that acts like a tile
+
     def __init__(self, x, y, width, height, sprite):
         self.x = x
         self.y = y
@@ -217,24 +253,31 @@ class Wall():
         self.height = height
         self.sprite = sprite
 
-    def draw(self, canvas):
+    def draw(self, canvas): #Specific to simplegui
         canvas.draw_image(self.sprite,
                           (self.width/2, self.height/2),
                           (self.width, self.height),
                           (self.x, self.y),
                           (self.width, self.height))
 
-
-
-
 # ----------------------------------------------------------------------------------------------------------
-# GAME AND GAME RULES
+# ENTITIES
 # ----------------------------------------------------------------------------------------------------------
-player_one = Player(1, WIDTH/2, HEIGHT/2, 32, 32, 0.2, 1.5, 4)
+
+player_one = Player(1, WIDTH/2, HEIGHT/2, 32, 32, 0.2, 1.5, 5, 6)
 
 wall_array = []
-for i in range(0, int(WIDTH/64)-10):
-    wall_array.append(Wall(512+i*64, HEIGHT, 64, 64, test_wall_image))
+for i in range(0, int(WIDTH/64)+1):
+    wall_array.append(Wall(i*64, HEIGHT, 64, 64, test_wall_image))
+
+for i in range(0, int(WIDTH/64)+1):
+    wall_array.append(Wall(i*64, 0, 64, 64, test_wall_image))
+
+for i in range(0, int(HEIGHT/64)+1):
+    wall_array.append(Wall(0, i*64, 64, 64, test_wall_image))
+
+for i in range(0, int(HEIGHT/64)+1):
+    wall_array.append(Wall(WIDTH, i*64, 64, 64, test_wall_image))
 
 for i in range(0, 6):
     wall_array.append(Wall(i*64, HEIGHT/2, 64, 64, test_wall_image))
@@ -242,15 +285,17 @@ for i in range(0, 6):
 for i in range(0, 6):
     wall_array.append(Wall(WIDTH-(i*64), HEIGHT/2, 64, 64, test_wall_image))
 
-wall_array.append(Wall(WIDTH/2, HEIGHT-64, 64,64, test_wall_image))
-wall_array.append(Wall(WIDTH/2, HEIGHT-128, 64,64, test_wall_image))
+
+# ----------------------------------------------------------------------------------------------------------
+# GAME AND GAME RULES
+# ----------------------------------------------------------------------------------------------------------
 
 class Game:
 
     def __init__(self):
         self.game_speed = 1
 
-    def draw(self, canvas):
+    def draw(self, canvas): #Specific to simplegui
         player_one.draw(canvas)
         for wall in wall_array:
             wall.draw(canvas)
