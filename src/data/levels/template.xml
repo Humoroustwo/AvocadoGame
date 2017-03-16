@@ -1,0 +1,6 @@
+name:SomeLevelString
+background_path:./SomeBackgroundImage.png
+wall_image./SomeWallImage.png
+walls:xval,yval,width,height|xval,yval,width,height|xval,yval,width,height
+min_enemies:10
+max_enemies:20
