@@ -4,16 +4,16 @@ except ImportError:
     import SimpleGUICS2Pygame.simpleguics2pygame as simplegui
 
 import time
-import urllib2
 import random
 import math
+import urllib2
 
 current_time = time.time() * 1000
 last_pressed = current_time + 100
 
 # CONSTANTS
-WIDTH = 1280
-HEIGHT = 720
+WIDTH = 1000
+HEIGHT = 500
 GAMESPEED = 1
 # SPRITE CONSTANTS
 SP_SIZE = [64, 64]
@@ -113,18 +113,20 @@ class Entity(Vector):
         self.x = x
         self.y = y
 
+
 class Jumper(Entity):
     def __init__(self):
         self.todo = 0
+
 
 class Shooter(Entity):
     def __init__(self):
         self.todo = 0
 
+
 class Soldier(Entity):
     def __init__(self):
         self.todo = 0
-
 
 
 # ----------------------------------------------------------------------------------------------------------
@@ -285,30 +287,7 @@ class Wall():
                           (self.width, self.height))
 
 
-# ----------------------------------------------------------------------------------------------------------
-# ENTITIES
-# ----------------------------------------------------------------------------------------------------------
 
-player_one = Player(1, WIDTH / 2, HEIGHT / 2, 32, 32, 0.2, 1.5, 5, 6)
-
-wall_array = []
-for i in range(0, int(WIDTH / 64) + 1):
-    wall_array.append(Wall(i * 64, HEIGHT, 64, 64, test_wall_image))
-
-for i in range(0, int(WIDTH / 64) + 1):
-    wall_array.append(Wall(i * 64, 0, 64, 64, test_wall_image))
-
-for i in range(0, int(HEIGHT / 64) + 1):
-    wall_array.append(Wall(0, i * 64, 64, 64, test_wall_image))
-
-for i in range(0, int(HEIGHT / 64) + 1):
-    wall_array.append(Wall(WIDTH, i * 64, 64, 64, test_wall_image))
-
-for i in range(0, 6):
-    wall_array.append(Wall(i * 64, HEIGHT / 2, 64, 64, test_wall_image))
-
-for i in range(0, 6):
-    wall_array.append(Wall(WIDTH - (i * 64), HEIGHT / 2, 64, 64, test_wall_image))
 
 
 # ----------------------------------------------------------------------------------------------------------
@@ -319,8 +298,13 @@ class Game:
     def __init__(self):
         self.game_speed = 1
 
+
+
     def draw(self, canvas):  # Specific to simplegui
         player_one.draw(canvas)
+        for enemy in enemy_array:
+            enemy_array.draw()
+
         for wall in wall_array:
             wall.draw(canvas)
 
@@ -329,75 +313,77 @@ class Game:
 # Level
 # ----------------------------------------------------------------------------------------------------------
 
-#name:Testing Level
-#background_image:
-#wall_image:
-#walls:xpos,ypos,width,height|xpos,ypos,width,height|xpos,ypos,width,height
-#min_enemies:10
-#max_enemies:20
-#min_time_between_spawn:
-#max_time_between_spawn:
-#proportion_shooters: 0.2
-#proportion_bouncers: 0.5
-#proportion_soldiers: 0.3
-
-
-
 
 class Level:
     def __init__(self, file_path):
+
         # Level Metadata
-        raw_file = urllib2.urlopen(simplegui.file2url("./data/levels/" + file_path)).readlines()
-        self.level_name = self.get_level_file_field("name", raw_file)
+        self.raw_data = open("data/levels/" + file_path).readlines()
+        self.level_name = self.get_level_file_field("name")
 
         # Loading textures
-        self.background = simplegui.load_image(self.get_level_file_field("background_image", raw_file))
-        self.wall_texture = simplegui.load_image(self.get_level_file_field("wall_image", raw_file))
+        self.background = simplegui.load_image("/data/levels/" + self.get_level_file_field("background_image"))
+        self.wall_texture = simplegui.load_image("/data/levels/" + self.get_level_file_field("wall_image"))
 
         # Enemy variables
-        self.min_enemy_count = self.get_level_file_field("min_enemies", raw_file)
-        self.max_enemy_count = self.get_level_file_field("max_enemies", raw_file)
-        self.min_time_between_spawn = self.get_level_file_field("min_time_between_spawn", raw_file)
-        self.max_time_between_spawn = self.get_level_file_field("max_time_between_spawn", raw_file)
+        self.min_enemy_count = int(self.get_level_file_field("min_enemies"))
+        self.max_enemy_count = int(self.get_level_file_field("max_enemies"))
+
+        self.min_time_between_spawn = int(self.get_level_file_field("min_time_between_spawn"))
+        self.max_time_between_spawn = int(self.get_level_file_field("max_time_between_spawn"))
 
         # Generating enemy queue
-
-        self.proportion_shooters = self.get_level_file_field("proportion_shooters", raw_file)
-        self.proportion_bouncers = self.get_level_file_field("proportion_bouncers", raw_file)
-        self.proportion_soldiers = self.get_level_file_field("proportion_soldiers", raw_file)
+        self.proportion_shooters = float(self.get_level_file_field("proportion_shooters"))
+        self.proportion_bouncers = float(self.get_level_file_field("proportion_bouncers"))
+        self.proportion_soldiers = float(self.get_level_file_field("proportion_soldiers"))
         self.enemy_queue = None
         self.generate_enemies_queue()
 
+    def get_level_file_field(self, field_name):
+        for i in self.raw_data:
+            line = i.split(":")
+            if line[0] == field_name:
+                return line[1]
+        print ("Warning: Field \"" + field_name + "\" not found!")
+
+
+    def generate_wall_array(self):
+        walls = str.split(self.get_level_file_field("walls"), "|")
+        wall_output = []
+        for wall in walls:
+            wall_params = str.split(wall, ",")
+            wall_output.append(Wall(int(wall_params[0]), int(wall_params[1]), int(wall_params[2]), int(wall_params[3]), self.wall_texture))
+
+        for i in range(0, int(WIDTH / 64) + 1):
+            wall_output.append(Wall(i * 64, HEIGHT, 64, 64, test_wall_image))
+        for i in range(0, int(WIDTH / 64) + 1):
+            wall_output.append(Wall(i * 64, 0, 64, 64, test_wall_image))
+        for i in range(0, int(HEIGHT / 64) + 1):
+            wall_output.append(Wall(0, i * 64, 64, 64, test_wall_image))
+        for i in range(0, int(HEIGHT / 64) + 1):
+            wall_output.append(Wall(WIDTH, i * 64, 64, 64, test_wall_image))
+        return wall_output
 
     def generate_enemies_queue(self):
-        rand = random.seed()
+        random.seed()
         enemy_count = math.ceil((self.max_enemy_count - self.min_enemy_count)) + self.min_enemy_count
 
         enemies = []
         # Filling list initially (for each enemy type)
-        for _ in range(round(self.proportion_shooters*enemy_count)):
+        for _ in range(int(round(self.proportion_shooters * enemy_count))):
             enemies.append(Shooter())
-        for _ in range(round(self.proportion_shooters*enemy_count)):
+        for _ in range(int(round(self.proportion_shooters * enemy_count))):
             enemies.append(Jumper())
-        for _ in range(round(self.proportion_shooters*enemy_count)):
+        for _ in range(int(round(self.proportion_shooters * enemy_count))):
             enemies.append(Soldier())
 
         # Randomising List
         for x in enemies:
-
-            j = round(random.random()*enemies.count())
-            swap = enemies[x]
-            enemies[x] = enemies[j]
-            enemies[x] = swap
-
-        self.enemy_queue = enemies
-
-    def get_level_file_field(self, field_name, file_lines):
-        for i in file_lines:
-            line = i.split(":")
-            if line[0] == field_name:
-                return line[1]
-        print ("Warning: Field \"" + field_name + + "\" not found!")
+            j = int(round(random.random() * (len(enemies) - 1)))
+            swap = x
+            x = enemies[j]
+            x = swap
+        return enemies
 
 
 # ----------------------------------------------------------------------------------------------------------
@@ -409,6 +395,17 @@ new_game = Game()
 def display(canvas):
     new_game.draw(canvas)
 
+
+# ----------------------------------------------------------------------------------------------------------
+# ENTITIES
+# ----------------------------------------------------------------------------------------------------------
+
+player_one = Player(1, WIDTH / 2, HEIGHT / 2, 32, 32, 0.2, 1.5, 5, 6)
+current_level = Level("test.lvl")
+wall_array = current_level.generate_wall_array()
+enemy_array = []
+
+enemy_queue = []
 
 # ----------------------------------------------------------------------------------------------------------
 # SIMPLE GUI FRAME
