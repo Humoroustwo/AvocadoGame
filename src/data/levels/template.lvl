@@ -1,0 +1,11 @@
+name:Testing Level
+background_image:
+wall_image:
+walls:xpos,ypos,width,height|xpos,ypos,width,height|xpos,ypos,width,height
+min_enemies:10
+max_enemies:20
+min_time_between_spawn:
+max_time_between_spawn:
+shooters: 2
+bouncers: 5
+soldiers: 3
