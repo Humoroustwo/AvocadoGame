@@ -6,14 +6,13 @@ except ImportError:
 import time
 import random
 import math
-import urllib2
 
 current_time = time.time() * 1000
 last_pressed = current_time + 100
 
 # CONSTANTS
-WIDTH = 1000
-HEIGHT = 500
+WIDTH = 1280
+HEIGHT = 720
 GAMESPEED = 1
 # SPRITE CONSTANTS
 SP_SIZE = [64, 64]
@@ -303,7 +302,7 @@ class Game:
     def draw(self, canvas):  # Specific to simplegui
         player_one.draw(canvas)
         for enemy in enemy_array:
-            enemy_array.draw()
+            enemy.draw()
 
         for wall in wall_array:
             wall.draw(canvas)
@@ -345,7 +344,6 @@ class Level:
             if line[0] == field_name:
                 return line[1]
         print ("Warning: Field \"" + field_name + "\" not found!")
-
 
     def generate_wall_array(self):
         walls = str.split(self.get_level_file_field("walls"), "|")
