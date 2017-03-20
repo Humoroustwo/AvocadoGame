@@ -189,8 +189,7 @@ class Player:
         wall_w = 0
         wall_h = 0
         for wall in wall_list:
-            if ((wall.x + wall.width + self.width >= self.x + self.width >= wall.x - wall.width / 2)
-                and (wall.y + wall.height / 2 >= self.y + self.height >= wall.y - wall.height / 2)):
+            if ((wall.x + wall.width + self.width >= self.x + self.width >= wall.x - wall.width / 2) and (wall.y + wall.height / 2 >= self.y + self.height >= wall.y - wall.height / 2)):
                 wall_x = wall.x
                 wall_y = wall.y
                 wall_w = wall.width
@@ -350,7 +349,7 @@ class Level:
         wall_output = []
         for wall in walls:
             wall_params = str.split(wall, ",")
-            wall_output.append(Wall(int(wall_params[0]), int(wall_params[1]), int(wall_params[2]), int(wall_params[3]), self.wall_texture))
+            wall_output.append(Wall(int(wall_params[0]), int(wall_params[1]), int(wall_params[2]), int(wall_params[3]), test_wall_image))
 
         for i in range(0, int(WIDTH / 64) + 1):
             wall_output.append(Wall(i * 64, HEIGHT, 64, 64, test_wall_image))

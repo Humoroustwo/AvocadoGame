@@ -1,11 +1,11 @@
-name:Testing Level
+name:
 background_image:
-wall_image:block.png
-walls:30xpos,ypos,width,height|xpos,ypos,width,height|xpos,ypos,width,height
-min_enemies:10
-max_enemies:20
-min_time_between_spawn:5
-max_time_between_spawn:10
-proportion_shooters:2
-proportion_bouncers:5
-proportion_soldiers:3
+wall_image:
+walls:xpos,ypos,width,height|xpos,ypos,width,height|xpos,ypos,width,height
+min_enemies:
+max_enemies:
+min_time_between_spawn:
+max_time_between_spawn:
+proportion_shooters:
+proportion_bouncers:
+proportion_soldiers:

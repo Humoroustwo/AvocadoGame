@@ -1,7 +1,7 @@
 name:Testing Level
 background_image:
 wall_image:block.png
-walls:1000,1000,64,64|100,100,64,64|100,100,64,64
+walls:10,10,64,64|100,100,64,64|100,100,64,64
 min_enemies:10
 max_enemies:20
 min_time_between_spawn:10
