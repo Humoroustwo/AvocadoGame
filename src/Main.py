@@ -7,6 +7,7 @@ import time
 import random
 import math
 
+
 current_time = time.time() * 1000
 last_pressed = current_time + 100
 
@@ -19,8 +20,8 @@ SP_SIZE = [64, 64]
 SP_CENTER = [32, 32]
 
 # IMAGES
-test_player_image = simplegui._load_local_image("sprite.png")
-test_wall_image = simplegui._load_local_image("block.png")
+test_player_image = simplegui._load_local_image("data/images/sprite.png")
+test_wall_image = simplegui._load_local_image("data/images/block.png")
 
 
 # VARIABLES
@@ -313,20 +314,25 @@ class Game:
 
 
 class Level:
-    def __init__(self, file_path):
+    def __init__(self, level_file_path, wall_image_file_path):
 
         # Level Metadata
-        self.raw_data = open("data/levels/" + file_path).readlines()
+        self.raw_data = open("data/levels/" + level_file_path).readlines()
         self.level_name = self.get_level_file_field("name")
-
         # Loading textures
-        self.background = simplegui.load_image("/data/levels/" + self.get_level_file_field("background_image"))
-        self.wall_texture = simplegui.load_image("/data/levels/" + self.get_level_file_field("wall_image"))
+        self.background = simplegui.load_image(self.get_level_file_field("background_image"))
 
-        # Enemy variables
+
+        #path = self.get_level_file_field("wall_image")    BUG PREVENTS THIS WORKING!
+        self.wall_texture = simplegui._load_local_image(wall_image_file_path)
+
+
+
+
+
+        # Enemy variable
         self.min_enemy_count = int(self.get_level_file_field("min_enemies"))
         self.max_enemy_count = int(self.get_level_file_field("max_enemies"))
-
         self.min_time_between_spawn = int(self.get_level_file_field("min_time_between_spawn"))
         self.max_time_between_spawn = int(self.get_level_file_field("max_time_between_spawn"))
 
@@ -349,7 +355,7 @@ class Level:
         wall_output = []
         for wall in walls:
             wall_params = str.split(wall, ",")
-            wall_output.append(Wall(int(wall_params[0]), int(wall_params[1]), int(wall_params[2]), int(wall_params[3]), test_wall_image))
+            wall_output.append(Wall(int(wall_params[0]), int(wall_params[1]), int(wall_params[2]), int(wall_params[3]), self.wall_texture))
 
         for i in range(0, int(WIDTH / 64) + 1):
             wall_output.append(Wall(i * 64, HEIGHT, 64, 64, test_wall_image))
@@ -398,7 +404,7 @@ def display(canvas):
 # ----------------------------------------------------------------------------------------------------------
 
 player_one = Player(1, WIDTH / 2, HEIGHT / 2, 32, 32, 0.2, 1.5, 5, 6)
-current_level = Level("test.lvl")
+current_level = Level("test.lvl", "data/images/block.png")
 wall_array = current_level.generate_wall_array()
 enemy_array = []
 
