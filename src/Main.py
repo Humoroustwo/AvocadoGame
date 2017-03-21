@@ -332,11 +332,11 @@ class Game:
             canvas.draw_text("Level complete!", (WIDTH/2, HEIGHT/2), 50, "white")
             canvas.draw_text("Score: " + str(self.score), (WIDTH / 2, (HEIGHT / 2) + 100), 50, "white")
 
-            if is_key_pressed():
-                if (self.current_level_index + 1) == len(self.levels):
-                    print("game shouldchange")
-                    global current_draw_handler
-                    current_draw_handler = draw_game_complete_screen
+            #if is_key_pressed():
+            #    if (self.current_level_index + 1) == len(self.levels):
+             #       print("game shouldchange")
+             #       global current_draw_handler
+             #       current_draw_handler = draw_game_complete_screen
 
 
 # ----------------------------------------------------------------------------------------------------------
@@ -460,15 +460,15 @@ def draw_game_over_screen(canvas):
     global current_draw_handler
 
     canvas.draw_text("You died! :(", (WIDTH / 2, HEIGHT / 2), 50, "white")
-    if is_key_pressed():
-        current_draw_handler = draw_splash_screen
+    #if is_key_pressed():
+    #    current_draw_handler = draw_splash_screen
 
 
 def draw_game_complete_screen(canvas):
     global current_draw_handler
     canvas.draw_text("Game complete!", (WIDTH / 2, HEIGHT / 2), 50, "white")
-    if is_key_pressed():
-        current_draw_handler = draw_splash_screen
+   # if is_key_pressed():
+   #     current_draw_handler = draw_splash_screen
 
 
 current_draw_handler = draw_splash_screen
