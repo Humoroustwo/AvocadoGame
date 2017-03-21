@@ -1,0 +1,11 @@
+name:
+background_image:
+wall_image:
+walls:xpos,ypos,width,height|xpos,ypos,width,height|xpos,ypos,width,height
+min_enemies:
+max_enemies:
+min_time_between_spawn:
+max_time_between_spawn:
+proportion_shooters:
+proportion_bouncers:
+proportion_soldiers:

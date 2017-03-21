@@ -42,16 +42,20 @@ class Key:
             self.pressed = True
 
     def check_up(self, key_code):
+        global last_key_up
+        last_key_up = time.time()
         if key_code == simplegui.KEY_MAP[self.name]:
             self.pressed = False
+
 
 
 keys = [Key('a', "1l"),
         Key('d', "1r"),
         Key('w', "1j"),
         Key('left', "2l"),
-        Key('right', "2r"),
-        Key('up', "2j")]
+        Key('right', "2r")]
+
+last_key_press = 0.0
 
 
 def key_down(key_code):
@@ -60,8 +64,21 @@ def key_down(key_code):
 
 
 def key_up(key_code):
+    global last_keyup
+    last_keyup = time.time()
+
     for k in keys:
         k.check_up(key_code)
+
+
+def is_key_pressed():
+    for k in keys:
+        if k.pressed:
+            global last_key_pressed
+            last_key_pressed = time.time()
+            return True
+    return False
+
 
 
 # ----------------------------------------------------------------------------------------------------------
@@ -294,18 +311,32 @@ class Wall():
 # ----------------------------------------------------------------------------------------------------------
 
 class Game:
-    def __init__(self):
+    def __init__(self, levels):
         self.game_speed = 1
-
-
+        self.current_level_index = 0
+        self.levels = levels
+        self.score = 0
+        self.enemy_array = []
 
     def draw(self, canvas):  # Specific to simplegui
+
         player_one.draw(canvas)
-        for enemy in enemy_array:
+        for enemy in self.enemy_array:
             enemy.draw()
 
-        for wall in wall_array:
+        for wall in self.levels[self.current_level_index].wall_array:
             wall.draw(canvas)
+
+        if len(self.enemy_array) == 0 and len(self.levels[self.current_level_index].enemy_queue) == 0:
+            # Display game over and score
+            canvas.draw_text("Level complete!", (WIDTH/2, HEIGHT/2), 50, "white")
+            canvas.draw_text("Score: " + str(self.score), (WIDTH / 2, (HEIGHT / 2) + 100), 50, "white")
+
+            if is_key_pressed():
+                if (self.current_level_index + 1) == len(self.levels):
+                    print("game shouldchange")
+                    global current_draw_handler
+                    current_draw_handler = draw_game_complete_screen
 
 
 # ----------------------------------------------------------------------------------------------------------
@@ -319,16 +350,13 @@ class Level:
         # Level Metadata
         self.raw_data = open("data/levels/" + level_file_path).readlines()
         self.level_name = self.get_level_file_field("name")
+
         # Loading textures
         self.background = simplegui.load_image(self.get_level_file_field("background_image"))
 
-
-        #path = self.get_level_file_field("wall_image")    BUG PREVENTS THIS WORKING!
+        # path = self.get_level_file_field("wall_image") BUG PREVENTS THIS WORKING!
         self.wall_texture = simplegui._load_local_image(wall_image_file_path)
-
-
-
-
+        self.wall_array = self.generate_wall_array()
 
         # Enemy variable
         self.min_enemy_count = int(self.get_level_file_field("min_enemies"))
@@ -340,9 +368,10 @@ class Level:
         self.proportion_shooters = float(self.get_level_file_field("proportion_shooters"))
         self.proportion_bouncers = float(self.get_level_file_field("proportion_bouncers"))
         self.proportion_soldiers = float(self.get_level_file_field("proportion_soldiers"))
-        self.enemy_queue = None
+        self.enemy_queue = []
         self.generate_enemies_queue()
 
+    # Get all data from line with (argument) string name
     def get_level_file_field(self, field_name):
         for i in self.raw_data:
             line = i.split(":")
@@ -390,38 +419,81 @@ class Level:
 
 
 # ----------------------------------------------------------------------------------------------------------
-# MAIN DISPLAY
-# ----------------------------------------------------------------------------------------------------------
-new_game = Game()
-
-
-def display(canvas):
-    new_game.draw(canvas)
-
-
-# ----------------------------------------------------------------------------------------------------------
-# ENTITIES
+# ENTITY DEFINITIONS
 # ----------------------------------------------------------------------------------------------------------
 
 player_one = Player(1, WIDTH / 2, HEIGHT / 2, 32, 32, 0.2, 1.5, 5, 6)
 current_level = Level("test.lvl", "data/images/block.png")
 wall_array = current_level.generate_wall_array()
-enemy_array = []
 
-enemy_queue = []
+# --------------------------------
+# GAME DEFINITIONS
+# --------------------------------
+
+
+levels = []
+levels.append(Level("test.lvl", "data/images/block.png"))
+# levels.append(Level("outside.lvl", "data/images/block.png"))
+# levels.append(Level("inside.lvl", "data/images/block.png"))
+# levels.append(Level("room.lvl", "data/images/block.png"))
+
+game = Game(levels)
+
+# ----------------------------------------------------------------------------------------------------------
+# MAIN DISPLAY
+# ----------------------------------------------------------------------------------------------------------
+
+
+def game_renderer(canvas):
+    game.draw(canvas)
+
+
+def draw_splash_screen(canvas):
+    global current_draw_handler
+    canvas.draw_text("Welcome to AvocadoGame!", (WIDTH / 2, HEIGHT / 2), 50, "white")
+    if is_key_pressed():
+        current_draw_handler = game_renderer
+        print("splash shouldchange")
+
+
+def draw_game_over_screen(canvas):
+    global current_draw_handler
+
+    canvas.draw_text("You died! :(", (WIDTH / 2, HEIGHT / 2), 50, "white")
+    if is_key_pressed():
+        current_draw_handler = draw_splash_screen
+
+
+def draw_game_complete_screen(canvas):
+    global current_draw_handler
+    canvas.draw_text("Game complete!", (WIDTH / 2, HEIGHT / 2), 50, "white")
+    if is_key_pressed():
+        current_draw_handler = draw_splash_screen
+
+
+current_draw_handler = draw_splash_screen
+
+
+def display(canvas):
+    global current_draw_handler
+    current_draw_handler(canvas)
+
+
+
 
 # ----------------------------------------------------------------------------------------------------------
 # SIMPLE GUI FRAME
 # ----------------------------------------------------------------------------------------------------------
 
 
-
-frame = simplegui.create_frame('tmp', WIDTH, HEIGHT)
+frame = simplegui.create_frame('Avocado Game', WIDTH, HEIGHT)
 frame.set_canvas_background('rgb(12,50,120)')
 frame._display_fps_average = True
 frame.set_draw_handler(display)
 frame.set_keydown_handler(key_down)
 frame.set_keyup_handler(key_up)
 frame.set_mouseclick_handler(mouse_handler)
-
 frame.start()
+
+
+
