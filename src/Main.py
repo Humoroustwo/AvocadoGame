@@ -368,8 +368,7 @@ class Level:
         self.proportion_shooters = float(self.get_level_file_field("proportion_shooters"))
         self.proportion_bouncers = float(self.get_level_file_field("proportion_bouncers"))
         self.proportion_soldiers = float(self.get_level_file_field("proportion_soldiers"))
-        self.enemy_queue = []
-        self.generate_enemies_queue()
+        self.enemy_queue = self.generate_enemies_queue()
 
     # Get all data from line with (argument) string name
     def get_level_file_field(self, field_name):
@@ -414,7 +413,7 @@ class Level:
             j = int(round(random.random() * (len(enemies) - 1)))
             swap = x
             x = enemies[j]
-            x = swap
+            enemies[j] = swap
         return enemies
 
 
