@@ -14,7 +14,6 @@ last_pressed = current_time + 100
 # CONSTANTS
 WIDTH = 1280
 HEIGHT = 720
-GAMESPEED = 1
 # SPRITE CONSTANTS
 SP_SIZE = [64, 64]
 SP_CENTER = [32, 32]
@@ -25,7 +24,7 @@ test_wall_image = simplegui._load_local_image("data/images/block.png")
 
 
 # VARIABLES
-
+game_speed = 1
 
 # ----------------------------------------------------------------------------------------------------------
 # BUTTON INPUT
@@ -151,13 +150,13 @@ class Soldier(Entity):
 # ----------------------------------------------------------------------------------------------------------
 
 class Player:
-    def __init__(self, player_num, x, y, width, height, acc, max_speed, max_jump, terminal_velocity):
+    def __init__(self, player_num, x, y, width, height, acc, max_speed, max_jump, terminal_velocity, health):
         self.x = x
         self.y = y
-        self.x_vel = 0
+        self.x_vel = 1
         self.y_vel = 0
         self.width = width
-        self.height = height
+        self.height =  height
         self.max_speed = max_speed
         self.acc = acc
         self.cur_speed = 0
@@ -166,21 +165,45 @@ class Player:
         self.on_ground = False
         self.max_jump = max_jump
         self.t_vel = terminal_velocity
+        self.health = health
+        self.time_last_hurt = 0
 
-    def draw(self, canvas):  # Specific to simplegui
-        global wall_array
-        global test_player_image
+    def draw(self, canvas): #Specific to simplegui
+        global wall_array, test_player_image, enemy_list
         canvas.draw_image(test_player_image, SP_CENTER, SP_SIZE, (self.x, self.y), SP_SIZE)
         self.control()
+        self.touch_enemy(enemy_list)
         self.collision_x(wall_array)
         self.gravity()
         self.collision_y(wall_array)
         self.put_back()
 
+
     def put_back(self):
-        if (self.y > HEIGHT):
+        if(self.y > HEIGHT):
             self.y = HEIGHT / 2
             self.x = WIDTH / 2
+
+    def touch_enemy(self, enemy_list):
+        for enemies in enemy_list:
+            if(self.time_last_hurt + 2000 < time.time()*1000):
+                if(enemies.x-self.width < self.x < enemies.x+self.width and
+                    enemies.y-self.height < self.y < enemies.y+self.height):
+                    self.time_last_hurt = time.time() * 1000
+                    self.health -= 1
+                    self.knockback(enemies)
+                    print(self.health)
+
+    def knockback(self, target):
+        knock_x = 0
+        if(self.x - target.x < 0):
+            knock_x = -1
+        else:
+            knock_x = 1
+        self.x_vel = knock_x * (self.max_speed*4)
+        self.in_air = True
+        self.on_ground = False
+        self.y_vel = -self.max_jump/2
 
     def collision_x(self, wall_list):
         wall_x = 0
@@ -190,16 +213,16 @@ class Player:
             wall_x = wall.x
             wall_y = wall.y
             wall_w = wall.width
-            if (wall_y + self.height * 1.9 >= self.y >= wall_y - self.height):
-                if (wall_x + wall_w > self.x + self.x_vel > wall_x - wall_w):
+            if(wall_y + self.height >= self.y >= wall_y - self.height*1.4):
+                if(wall_x+wall_w > self.x+self.x_vel > wall_x-wall_w):
                     self.x_vel = 0
-                    if (self.x < wall_x):
-                        self.x = wall_x - wall_w - 1
-                    if (self.x > wall_x):
-                        self.x = wall_x + wall_w + 1
+                    if(self.x<wall_x):
+                        self.x = wall_x-wall_w-1
+                    if(self.x>wall_x):
+                        self.x = wall_x+wall_w+1
 
     def collision_y(self, wall_list):
-        if (self.y_vel != 0):
+        if(self.y_vel != 0):
             self.in_air = True
 
         wall_x = 0
@@ -207,7 +230,8 @@ class Player:
         wall_w = 0
         wall_h = 0
         for wall in wall_list:
-            if ((wall.x + wall.width + self.width >= self.x + self.width >= wall.x - wall.width / 2) and (wall.y + wall.height / 2 >= self.y + self.height >= wall.y - wall.height / 2)):
+            if ((wall.x + wall.width + self.width >= self.x + self.width >= wall.x - wall.width / 2)
+                and (wall.y + wall.height / 2 >= self.y + self.height >= wall.y - wall.height / 2)):
                 wall_x = wall.x
                 wall_y = wall.y
                 wall_w = wall.width
@@ -219,7 +243,7 @@ class Player:
                     self.y = wall_y - 2 * self.height
                 break
 
-        if ((wall_x - self.width * 2) < self.x < (wall_x + self.width * 2)) == False:
+        if ((wall_x - self.width*2) < self.x < (wall_x + self.width*2)) == False:
             self.on_ground = False
 
         for wall in wall_list:
@@ -228,41 +252,44 @@ class Player:
             wall_w = wall.width
             wall.h = wall.height
 
-            if (wall_x - self.width * 2 <= self.x <= wall_x + self.width * 2
-                and wall_y < self.y < wall_y + self.height * 2.1):
+            if (wall_x - self.width*2 <= self.x <= wall_x + self.width*2
+                and wall_y < self.y < wall_y + self.height*2):
+                self.y = wall_y + self.height*2
                 self.y_vel = 0
 
     def gravity(self):
         if (not self.on_ground):
             self.y_vel += self.grav
-            if (self.y_vel > self.t_vel):  # Terminal velocity
+            if(self.y_vel > self.t_vel): #Terminal velocity
                 self.y_vel = self.t_vel
-            self.y += self.y_vel * GAMESPEED
+            self.y += self.y_vel*game_speed
 
     def accelerate(self, move):
-        self.x_vel += self.acc * move
+        self.x_vel += self.acc*move
         self.collision_x(wall_array)
         if self.x_vel > self.max_speed:
             self.x_vel = self.max_speed
         elif self.x_vel < -self.max_speed:
             self.x_vel = -self.max_speed
 
+
     def decelerate(self):
         if self.x_vel < 0:
             self.x_vel += self.acc / 2
         elif self.x_vel > 0:
             self.x_vel += -self.acc / 2
-        if (-self.acc / 3 < self.x_vel < self.acc / 3):
+        if(-self.acc/3 < self.x_vel < self.acc/3):
             self.x_vel = 0
         self.collision_x(wall_array)
 
     def jump(self):
-        if (self.on_ground):
+        if(self.on_ground):
             self.in_air = True
             self.on_ground = False
             self.y_vel -= self.max_jump
 
-    def control(self):  # Specific to simplegui
+
+    def control(self): #Specific to simplegui
         last_pressed = 0
         for k in keys:
             if k.pressed:
@@ -275,12 +302,107 @@ class Player:
                     last_pressed = time.time() * 1000
                 elif k.inp == "1j":
                     self.jump()
+
             else:
                 if (last_pressed + 100 < time.time() * 1000):
                     self.decelerate()
 
-            self.x += self.x_vel * GAMESPEED
-            self.y += self.y_vel * GAMESPEED
+            self.x += self.x_vel*game_speed
+            self.y += self.y_vel*game_speed
+
+# ----------------------------------------------------------------------------------------------------------
+# ENEMIES
+# ----------------------------------------------------------------------------------------------------------
+#TEMPORARY UNTIL A PROPER ENEMY CLASS IS MADE
+
+class Enemy:
+    def __init__(self, x, y, width, height, acc, max_speed, max_jump):
+        self.x = x
+        self.y = y
+        self.x_vel = 4
+        self.y_vel = 0
+        self.set_speed = 4
+        self.width = width
+        self.height =  height
+        self.max_speed = max_speed
+        self.acc = acc
+        self.cur_speed = 0
+        self.grav = 0.2
+        self.in_air = True
+        self.on_ground = False
+        self.max_jump = max_jump
+        self.time_last_col = 0
+
+    def basic_ai(self):
+        if(self.x_vel == 0):
+            if(self.time_last_col + 1000 < time.time()*1000):
+                self.time_last_col = time.time()*1000
+                self.set_speed = -self.set_speed
+                self.x_vel = self.set_speed*game_speed
+        self.x += self.x_vel
+
+    def collision_x(self, wall_list):
+        wall_x = 0
+        wall_y = 0
+        wall_w = 0
+        for wall in wall_list:
+            wall_x = wall.x
+            wall_y = wall.y
+            wall_w = wall.width
+            if(wall_y +self.height*1.9 >= self.y >= wall_y - self.height):
+                if(wall_x+wall_w > self.x+self.x_vel > wall_x-wall_w):
+                    self.x_vel = 0
+                    if(self.x<wall_x):
+                        self.x = wall_x-wall_w-1
+                    if(self.x>wall_x):
+                        self.x = wall_x+wall_w+1
+
+    def collision_y(self, wall_list):
+        if(self.y_vel != 0):
+            self.in_air = True
+
+        wall_x = 0
+        wall_y = 0
+        wall_w = 0
+        wall_h = 0
+        for wall in wall_list:
+            if ((wall.x + wall.width + self.width >= self.x + self.width >= wall.x - wall.width / 2)
+                and (wall.y + wall.height / 2 >= self.y + self.height >= wall.y - wall.height / 2)):
+                wall_x = wall.x
+                wall_y = wall.y
+                wall.h = wall.height
+                if (self.in_air):
+                    self.in_air = False
+                    self.on_ground = True
+                    self.y_vel = 0
+                    self.y = wall_y - 2 * self.height
+                break
+
+        if ((wall_x - self.width*2) < self.x < (wall_x + self.width*2)) == False:
+            self.on_ground = False
+
+        for wall in wall_list:
+            wall_x = wall.x
+            wall_y = wall.y
+            wall.h = wall.height
+
+            if (wall_x - self.width*2 <= self.x <= wall_x + self.width*2
+                and wall_y < self.y < wall_y + self.height*2.01):
+                self.y_vel = 0
+
+    def gravity(self):
+        if (not self.on_ground):
+            self.y_vel += self.grav
+            self.y += self.y_vel*game_speed
+
+    def draw(self, canvas):
+        global wall_array
+        global test_player_image
+        canvas.draw_image(test_wall_image, SP_CENTER, SP_SIZE, (self.x, self.y), SP_SIZE)
+        self.gravity()
+        self.basic_ai()
+        self.collision_x(wall_array)
+        self.collision_y(wall_array)
 
 
 # ----------------------------------------------------------------------------------------------------------
@@ -421,9 +543,10 @@ class Level:
 # ENTITY DEFINITIONS
 # ----------------------------------------------------------------------------------------------------------
 
-player_one = Player(1, WIDTH / 2, HEIGHT / 2, 32, 32, 0.2, 1.5, 5, 6)
+player_one = Player(1, WIDTH / 2, HEIGHT / 2, 32, 32, 0.2, 1.5, 5, 6, 3)
 current_level = Level("test.lvl", "data/images/block.png")
 wall_array = current_level.generate_wall_array()
+enemy_list = []
 
 # --------------------------------
 # GAME DEFINITIONS
