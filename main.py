@@ -46,7 +46,9 @@ keys = [Key('a', "1l"),
         Key('w', "1j"),
         Key('left', "2l"),
         Key('right', "2r"),
-        Key('up', "2j")]
+        Key('up', "2j"),
+        Key('e', "1sr"),
+        Key('q', "1sl")]
 
 def key_down(key_code):
     for k in keys:
@@ -102,7 +104,7 @@ class Entity(Vector):
         self.y = y
 
 # ----------------------------------------------------------------------------------------------------------
-# PLAYER
+# PROJECTILES
 # ----------------------------------------------------------------------------------------------------------
 
 class Projectile:
@@ -126,7 +128,39 @@ class Projectile:
         self.y += (self.speed / math.cos(self.angle))
         self.x += (self.speed / math.sin(self.angle))
 
+class xProjectile:
+    def __init__(self, sx, sy, dir):
+        self.x = sx
+        self.y = sy
+        self.speed = 15*dir
+
+    def draw(self, canvas):
+        canvas.draw_circle((self.x,self.y), 10, 15, 'Red')
+
+        self.x += self.speed
+
+# ----------------------------------------------------------------------------------------------------------
+# ENEMIES
+# ----------------------------------------------------------------------------------------------------------
+
+class Soldier:
+
+    def __init__(self, x, y, target):
+        self.x = x
+        self.y = y
+        self.target = target
+
+
+
+# ----------------------------------------------------------------------------------------------------------
+# PLAYER
+# ----------------------------------------------------------------------------------------------------------
+
+myProjectiles = []
+
 class Player:
+
+
     def __init__(self, player_num, x, y, width, height, acc, max_speed, max_jump, terminal_velocity):
         self.x = x
         self.y = y
@@ -142,11 +176,19 @@ class Player:
         self.on_ground = False
         self.max_jump = max_jump
         self.t_vel = terminal_velocity
+        self.last_shot = time.time()*1000
 
     def draw(self, canvas): #Specific to simplegui
         global wall_array
         global test_player_image
+        global myProjectiles
+
         canvas.draw_image(test_player_image, SP_CENTER, SP_SIZE, (self.x, self.y), SP_SIZE)
+
+        if myProjectiles:
+            for p in myProjectiles:
+                p.draw(canvas)
+
         self.control()
         self.collision_x(wall_array)
         self.gravity()
@@ -241,8 +283,13 @@ class Player:
             self.on_ground = False
             self.y_vel -= self.max_jump
 
+    def shoot(self, dir):
+        global myProjectiles
+        myProjectiles.append(xProjectile(self.x, self.y, dir))
+
     def control(self): #Specific to simplegui
         last_pressed = 0
+        cur = time.time()*1000
         for k in keys:
             if k.pressed:
                 i = 0
@@ -254,6 +301,12 @@ class Player:
                     last_pressed = time.time() * 1000
                 elif k.inp == "1j":
                     self.jump()
+                elif k.inp == "1sr" and cur - self.last_shot > 500:
+                    self.shoot(1)
+                    self.last_shot = cur
+                elif k.inp == "1sl" and cur - self.last_shot > 500:
+                    self.shoot(-1)
+                    self.last_shot = cur
             else:
                 if (last_pressed + 100 < time.time() * 1000):
                     self.decelerate()
@@ -330,15 +383,14 @@ class Game:
 # ----------------------------------------------------------------------------------------------------------
 # MAIN DISPLAY
 # ----------------------------------------------------------------------------------------------------------
-p = Projectile(0,0, WIDTH, HEIGHT)
+#p = Projectile(0,0, WIDTH, HEIGHT)
 new_game = Game()
 def display(canvas):
-    global mouse_click_pos, mouse_click, p
+    global mouse_click_pos, mouse_click
     if mouse_click:
-        p = Projectile(player_one.getX(), player_one.getY(), WIDTH/2, HEIGHT/2)
         mouse_click = False
     new_game.draw(canvas)
-    p.draw(canvas)
+
 
 # ----------------------------------------------------------------------------------------------------------
 # SIMPLE GUI FRAME
