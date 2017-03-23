@@ -21,11 +21,37 @@ SP_CENTER = [32, 32]
 # IMAGES
 test_player_image = simplegui._load_local_image("data/images/sprite.png")
 test_wall_image = simplegui._load_local_image("data/images/block.png")
+player_sps = simplegui._load_local_image("data/images/character_sheet.png")
 
 
 # VARIABLES
 game_speed = 1
 
+# ----------------------------------------------------------------------------------------------------------
+# SPRITE OBJECT
+# ----------------------------------------------------------------------------------------------------------
+#Yeah, I kinda forgot how simplegui handled sprites.
+#It's easier to initially make a sprite object class and then place them into an array.
+
+class Sprites():
+    global SP_SIZE, SP_CENTER
+    def __init__(self, src, pos):
+        self.src = src
+        self.center = [32 + (pos[0]*64), 32 + (pos[1]*64)]
+        self.size = SP_SIZE
+
+    def draw(self, canvas, pos, size):
+        canvas.draw_image(self.src, self.center, self.size, pos, size)
+
+
+# ----------------------------------------------------------------------------------------------------------
+# SPRITES
+# ----------------------------------------------------------------------------------------------------------
+#Initialising sprites
+player_one_sp = []
+for i in range(0, 1):
+    for j in range(0, 4):
+        player_one_sp.append(Sprites(player_sps, (i, j)))
 # ----------------------------------------------------------------------------------------------------------
 # BUTTON INPUT
 # ----------------------------------------------------------------------------------------------------------
@@ -167,10 +193,13 @@ class Player:
         self.t_vel = terminal_velocity
         self.health = health
         self.time_last_hurt = 0
+        self.facing_dir = "right"
+
 
     def draw(self, canvas): #Specific to simplegui
-        global wall_array, test_player_image, enemy_list
+        global wall_array, test_player_image, enemy_list, player_one_sp
         canvas.draw_image(test_player_image, SP_CENTER, SP_SIZE, (self.x, self.y), SP_SIZE)
+        self.sprite_handler(canvas)
         self.control()
         self.touch_enemy(enemy_list)
         self.collision_x(wall_array)
@@ -178,6 +207,30 @@ class Player:
         self.collision_y(wall_array)
         self.put_back()
 
+
+    def sprite_handler(self, canvas):
+
+        sps_pos = [0, 0]
+        last_frame_time = time.time() * 1000
+        if(self.on_ground):
+
+            if(self.x_vel > 0):
+                if(last_frame_time + 100 < time.time() * 1000):
+                    last_frame_time = time.time() * 1000
+                    sps_pos[0] += 1
+                    sps_pos[1] = 0
+            if(self.x_vel < 0):
+                if(last_frame_time + 100 < time.time() * 1000):
+                    last_frame_time = time.time() * 1000
+                    sps_pos[0] -= 1
+                    sps_pos[1] = 1
+            if (sps_pos[0] > 4):
+                sps_pos[0] = 0
+            if(self.x_vel == 0):
+                sps_pos[0]
+        sp_array_pos = (sps_pos[0]+1)*(sps_pos[1]+1) - 1
+        print(sp_array_pos)
+        player_one_sp[sp_array_pos].draw(canvas, (self.x, self.y), (64, 64))
 
     def put_back(self):
         if(self.y > HEIGHT):
@@ -296,9 +349,11 @@ class Player:
                 i = 0
                 if k.inp == "1l":
                     self.accelerate(-1)
+                    self.facing_dir = "left"
                     last_pressed = time.time() * 1000
                 elif k.inp == "1r":
                     self.accelerate(1)
+                    self.facing_dir = "right"
                     last_pressed = time.time() * 1000
                 elif k.inp == "1j":
                     self.jump()
@@ -543,7 +598,7 @@ class Level:
 # ENTITY DEFINITIONS
 # ----------------------------------------------------------------------------------------------------------
 
-player_one = Player(1, WIDTH / 2, HEIGHT / 2, 32, 32, 0.2, 1.5, 5, 6, 3)
+player_one = Player(1, WIDTH / 2, HEIGHT / 2, 32, 32, 0.2, 1.5, 5, 3.5, 2)
 current_level = Level("test.lvl", "data/images/block.png")
 wall_array = current_level.generate_wall_array()
 enemy_list = []
