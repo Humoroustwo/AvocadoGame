@@ -21,11 +21,39 @@ SP_CENTER = [32, 32]
 # IMAGES
 test_player_image = simplegui._load_local_image("data/images/sprite.png")
 test_wall_image = simplegui._load_local_image("data/images/block.png")
+player_sps = simplegui._load_local_image("data/images/character_sheet.png")
+player_projectile = simplegui._load_local_image("data/images/PlayerProjectile.png")
 
 
 # VARIABLES
 game_speed = 1
+projectile_list = []
 
+# ----------------------------------------------------------------------------------------------------------
+# SPRITE OBJECT
+# ----------------------------------------------------------------------------------------------------------
+#Yeah, I kinda forgot how simplegui handled sprites.
+#It's easier to initially make a sprite object class and then place them into an array.
+
+class Sprites():
+    global SP_SIZE, SP_CENTER
+    def __init__(self, src, pos):
+        self.src = src
+        self.center = [32 + (pos[0]*64), 32 + (pos[1]*64)]
+        self.size = SP_SIZE
+
+    def draw(self, canvas, pos, size):
+        canvas.draw_image(self.src, self.center, self.size, pos, size)
+
+
+# ----------------------------------------------------------------------------------------------------------
+# SPRITES
+# ----------------------------------------------------------------------------------------------------------
+#Initialising sprites
+player_one_sp = []
+for i in range(0, 2):
+    for j in range(0, 5):
+        player_one_sp.append(Sprites(player_sps, (j, i)))
 # ----------------------------------------------------------------------------------------------------------
 # BUTTON INPUT
 # ----------------------------------------------------------------------------------------------------------
@@ -51,8 +79,7 @@ class Key:
 keys = [Key('a', "1l"),
         Key('d', "1r"),
         Key('w', "1j"),
-        Key('left', "2l"),
-        Key('right', "2r")]
+        Key('g', "1s")]
 
 last_key_press = 0.0
 
@@ -144,6 +171,48 @@ class Soldier(Entity):
     def __init__(self):
         self.todo = 0
 
+# ----------------------------------------------------------------------------------------------------------
+# PROJECTILES
+# ----------------------------------------------------------------------------------------------------------
+
+class Projectile:
+    def __init__(self, tx, ty, sx, sy):
+        self.x = sx
+        self.y = sy
+        self.speed = 1
+        self.angle = self.getAngle(tx, ty, sx, sy)
+
+    def getAngle(self, tx, ty, sx, sy):
+        ang = math.atan2((sy - ty), (sx - tx))
+
+        if (tx < sx and ty < sy) or (tx > sx and ty > sy):
+            ang += math.pi
+
+        return ang
+
+    def draw(self, canvas):
+        canvas.draw_circle((self.x, self.y), 10, 10, 'Green')
+
+        self.y += (self.speed / math.cos(self.angle))
+        self.x += (self.speed / math.sin(self.angle))
+
+class xProjectile:
+    def __init__(self, sx, sy, dir):
+        self.x = sx
+        self.y = sy
+        self.speed = 15 * dir
+
+    def draw(self, canvas):
+        #canvas.draw_circle((self.x, self.y), 10, 15, 'Red')
+        canvas.draw_image(player_projectile, (259, 101), (518,202), (self.x, self.y), (32,32))
+        self.x += self.speed
+
+    def getX(self):
+        return self.x
+
+    def getY(self):
+        return self.y
+
 
 # ----------------------------------------------------------------------------------------------------------
 # PLAYER
@@ -167,10 +236,17 @@ class Player:
         self.t_vel = terminal_velocity
         self.health = health
         self.time_last_hurt = 0
+        self.facing_dir = "right"
+
+        self.last_frame_time = time.time() * 1000
+        self.sps_pos = [0, 0]
+        self.last_shot = time.time() * 1000
+        self.counter = 0
 
     def draw(self, canvas): #Specific to simplegui
-        global wall_array, test_player_image, enemy_list
+        global wall_array, test_player_image, enemy_list, player_one_sp
         canvas.draw_image(test_player_image, SP_CENTER, SP_SIZE, (self.x, self.y), SP_SIZE)
+        self.sprite_handler(canvas)
         self.control()
         self.touch_enemy(enemy_list)
         self.collision_x(wall_array)
@@ -178,11 +254,49 @@ class Player:
         self.collision_y(wall_array)
         self.put_back()
 
+    def sprite_handler(self, canvas):
+        if(self.on_ground):
+            if(self.x_vel > 0):
+                if(self.last_frame_time + 100 < time.time() * 1000):
+                    self.last_frame_time = time.time() * 1000
+                    self.sps_pos[0] += 1
+                    self.sps_pos[1] = 0
+            if(self.x_vel < 0):
+                if(self.last_frame_time + 100 < time.time() * 1000):
+                    self.last_frame_time = time.time() * 1000
+                    self.sps_pos[0] += 1
+                    self.sps_pos[1] = 1
+            if(self.x_vel == 0):
+                if(self.facing_dir == "left"):
+                    self.sps_pos[0] = 0
+                    self.sps_pos[1] = 1
+                if(self.facing_dir == "right"):
+                    self.sps_pos[0] = 0
+                    self.sps_pos[1] = 0
+
+            if (self.sps_pos[0] > 3):
+                self.sps_pos[0] = 0
+        else:
+            self.sps_pos[0] = 4
+            if(self.facing_dir == "left"):
+                self.sps_pos[1] = 1
+            if(self.facing_dir == "right"):
+                self.sps_pos[1] = 0
+
+        sp_array_pos = (self.sps_pos[0])+(self.sps_pos[1]*5)
+        player_one_sp[sp_array_pos].draw(canvas, (self.x, self.y), (64, 64))
 
     def put_back(self):
         if(self.y > HEIGHT):
             self.y = HEIGHT / 2
             self.x = WIDTH / 2
+
+    def shoot(self):
+        global projectile_list
+        if(self.facing_dir == "left"):
+            projectile_list.append(xProjectile(self.x, self.y, -1))
+        if(self.facing_dir == "right"):
+            projectile_list.append(xProjectile(self.x, self.y, 1))
 
     def touch_enemy(self, enemy_list):
         for enemies in enemy_list:
@@ -288,20 +402,52 @@ class Player:
             self.on_ground = False
             self.y_vel -= self.max_jump
 
+    ###
+    ###
+    def key_detection(self):
+        for k in keys:
+            if k.pressed:
+                return k.inp
+
+    def control_tmp(self):
+        last_pressed = 0
+        if(self.key_detection() == "1l"):
+            self.accelerate(-1)
+            self.facing_dir = "left"
+            last_pressed = time.time() * 1000
+        elif(self.key_detection() == "1r"):
+            self.accelerate(1)
+            self.facing_dir = "right"
+            last_pressed = time.time() * 1000
+        elif(self.key_detection() == "1j"):
+            self.jump()
+        else:
+            if(last_pressed + 100 < time.time()*1000):
+                self.decelerate()
+
+        self.x += self.x_vel * game_speed
+        self.y += self.y_vel * game_speed
+    ###
+    ###
 
     def control(self): #Specific to simplegui
         last_pressed = 0
         for k in keys:
             if k.pressed:
-                i = 0
                 if k.inp == "1l":
                     self.accelerate(-1)
+                    self.facing_dir = "left"
                     last_pressed = time.time() * 1000
                 elif k.inp == "1r":
                     self.accelerate(1)
+                    self.facing_dir = "right"
                     last_pressed = time.time() * 1000
                 elif k.inp == "1j":
                     self.jump()
+                elif k.inp == "1s":
+                    if(self.last_shot + 500 < time.time()*1000):
+                        self.last_shot = time.time() * 1000
+                        self.shoot()
 
             else:
                 if (last_pressed + 100 < time.time() * 1000):
@@ -349,7 +495,7 @@ class Enemy:
             wall_x = wall.x
             wall_y = wall.y
             wall_w = wall.width
-            if(wall_y +self.height*1.9 >= self.y >= wall_y - self.height):
+            if(wall_y +self.height*1.9 >= self.y >= wall_y - self.height*1.2):
                 if(wall_x+wall_w > self.x+self.x_vel > wall_x-wall_w):
                     self.x_vel = 0
                     if(self.x<wall_x):
@@ -442,16 +588,12 @@ class Game:
 
     def draw(self, canvas):  # Specific to simplegui
 
-        #canvas.draw_image(test_player_image, SP_CENTER, SP_SIZE, (self.x, self.y), SP_SIZE)
-
-        canvas.draw_image( self.levels[self.current_level_index].background, (640, 360), (1280,720), (640, 360), (1280,720))
         player_one.draw(canvas)
         for enemy in self.enemy_array:
             enemy.draw()
 
         for wall in self.levels[self.current_level_index].wall_array:
             wall.draw(canvas)
-
 
         if len(self.enemy_array) == 0 and len(self.levels[self.current_level_index].enemy_queue) == 0:
             # Display game over and score
@@ -474,12 +616,14 @@ class Level:
     def __init__(self, level_file_path, wall_image_file_path):
 
         # Level Metadata
-        self.raw_data = open("data/levels/" + level_file_path).read().splitlines()
+        self.raw_data = open("data/levels/" + level_file_path).readlines()
         self.level_name = self.get_level_file_field("name")
 
         # Loading textures
-        self.background = simplegui._load_local_image(self.get_level_file_field("background_image"))
-        self.wall_texture = simplegui._load_local_image(self.get_level_file_field("wall_image"))
+        self.background = simplegui.load_image(self.get_level_file_field("background_image"))
+
+        # path = self.get_level_file_field("wall_image") BUG PREVENTS THIS WORKING!
+        self.wall_texture = simplegui._load_local_image(wall_image_file_path)
         self.wall_array = self.generate_wall_array()
 
         # Enemy variable
@@ -493,7 +637,6 @@ class Level:
         self.proportion_bouncers = float(self.get_level_file_field("proportion_bouncers"))
         self.proportion_soldiers = float(self.get_level_file_field("proportion_soldiers"))
         self.enemy_queue = self.generate_enemies_queue()
-
 
     # Get all data from line with (argument) string name
     def get_level_file_field(self, field_name):
@@ -511,13 +654,13 @@ class Level:
             wall_output.append(Wall(int(wall_params[0]), int(wall_params[1]), int(wall_params[2]), int(wall_params[3]), self.wall_texture))
 
         for i in range(0, int(WIDTH / 64) + 1):
-            wall_output.append(Wall(i * 64, HEIGHT, 64, 64, self.wall_texture))
+            wall_output.append(Wall(i * 64, HEIGHT, 64, 64, test_wall_image))
         for i in range(0, int(WIDTH / 64) + 1):
-            wall_output.append(Wall(i * 64, 0, 64, 64, self.wall_texture))
+            wall_output.append(Wall(i * 64, 0, 64, 64, test_wall_image))
         for i in range(0, int(HEIGHT / 64) + 1):
-            wall_output.append(Wall(0, i * 64, 64, 64, self.wall_texture))
+            wall_output.append(Wall(0, i * 64, 64, 64, test_wall_image))
         for i in range(0, int(HEIGHT / 64) + 1):
-            wall_output.append(Wall(WIDTH, i * 64, 64, 64, self.wall_texture))
+            wall_output.append(Wall(WIDTH, i * 64, 64, 64, test_wall_image))
         return wall_output
 
     def generate_enemies_queue(self):
@@ -546,7 +689,7 @@ class Level:
 # ENTITY DEFINITIONS
 # ----------------------------------------------------------------------------------------------------------
 
-player_one = Player(1, WIDTH / 2, HEIGHT / 2, 32, 32, 0.2, 1.5, 5, 6, 3)
+player_one = Player(1, WIDTH / 2, HEIGHT / 2, 32, 32, 0.2, 1.5, 5, 3.5, 2)
 current_level = Level("test.lvl", "data/images/block.png")
 wall_array = current_level.generate_wall_array()
 enemy_list = []
@@ -578,10 +721,12 @@ def draw_splash_screen(canvas):
     canvas.draw_text("Welcome to AvocadoGame!", (WIDTH / 2, HEIGHT / 2), 50, "white")
     if is_key_pressed():
         current_draw_handler = game_renderer
+        print("splash shouldchange")
 
 
 def draw_game_over_screen(canvas):
     global current_draw_handler
+
     canvas.draw_text("You died! :(", (WIDTH / 2, HEIGHT / 2), 50, "white")
     #if is_key_pressed():
     #    current_draw_handler = draw_splash_screen
@@ -600,6 +745,14 @@ current_draw_handler = draw_splash_screen
 def display(canvas):
     global current_draw_handler
     current_draw_handler(canvas)
+    for projectile in projectile_list:
+        projectile.draw(canvas)
+        if(projectile.x < 0):
+            projectile_list.remove(projectile)
+        if(projectile.x > WIDTH):
+            projectile_list.remove(projectile)
+
+    print(len(projectile_list))
 
 
 
