@@ -22,10 +22,12 @@ SP_CENTER = [32, 32]
 test_player_image = simplegui._load_local_image("data/images/sprite.png")
 test_wall_image = simplegui._load_local_image("data/images/block.png")
 player_sps = simplegui._load_local_image("data/images/character_sheet.png")
+player_projectile = simplegui._load_local_image("data/images/PlayerProjectile.png")
 
 
 # VARIABLES
 game_speed = 1
+projectile_list = []
 
 # ----------------------------------------------------------------------------------------------------------
 # SPRITE OBJECT
@@ -77,8 +79,7 @@ class Key:
 keys = [Key('a', "1l"),
         Key('d', "1r"),
         Key('w', "1j"),
-        Key('left', "2l"),
-        Key('right', "2r")]
+        Key('g', "1s")]
 
 last_key_press = 0.0
 
@@ -170,6 +171,48 @@ class Soldier(Entity):
     def __init__(self):
         self.todo = 0
 
+# ----------------------------------------------------------------------------------------------------------
+# PROJECTILES
+# ----------------------------------------------------------------------------------------------------------
+
+class Projectile:
+    def __init__(self, tx, ty, sx, sy):
+        self.x = sx
+        self.y = sy
+        self.speed = 1
+        self.angle = self.getAngle(tx, ty, sx, sy)
+
+    def getAngle(self, tx, ty, sx, sy):
+        ang = math.atan2((sy - ty), (sx - tx))
+
+        if (tx < sx and ty < sy) or (tx > sx and ty > sy):
+            ang += math.pi
+
+        return ang
+
+    def draw(self, canvas):
+        canvas.draw_circle((self.x, self.y), 10, 10, 'Green')
+
+        self.y += (self.speed / math.cos(self.angle))
+        self.x += (self.speed / math.sin(self.angle))
+
+class xProjectile:
+    def __init__(self, sx, sy, dir):
+        self.x = sx
+        self.y = sy
+        self.speed = 15 * dir
+
+    def draw(self, canvas):
+        #canvas.draw_circle((self.x, self.y), 10, 15, 'Red')
+        canvas.draw_image(player_projectile, (259, 101), (518,202), (self.x, self.y), (32,32))
+        self.x += self.speed
+
+    def getX(self):
+        return self.x
+
+    def getY(self):
+        return self.y
+
 
 # ----------------------------------------------------------------------------------------------------------
 # PLAYER
@@ -197,7 +240,7 @@ class Player:
 
         self.last_frame_time = time.time() * 1000
         self.sps_pos = [0, 0]
-
+        self.last_shot = time.time() * 1000
         self.counter = 0
 
     def draw(self, canvas): #Specific to simplegui
@@ -241,13 +284,19 @@ class Player:
                 self.sps_pos[1] = 0
 
         sp_array_pos = (self.sps_pos[0])+(self.sps_pos[1]*5)
-        print(sp_array_pos)
         player_one_sp[sp_array_pos].draw(canvas, (self.x, self.y), (64, 64))
 
     def put_back(self):
         if(self.y > HEIGHT):
             self.y = HEIGHT / 2
             self.x = WIDTH / 2
+
+    def shoot(self):
+        global projectile_list
+        if(self.facing_dir == "left"):
+            projectile_list.append(xProjectile(self.x, self.y, -1))
+        if(self.facing_dir == "right"):
+            projectile_list.append(xProjectile(self.x, self.y, 1))
 
     def touch_enemy(self, enemy_list):
         for enemies in enemy_list:
@@ -353,12 +402,38 @@ class Player:
             self.on_ground = False
             self.y_vel -= self.max_jump
 
+    ###
+    ###
+    def key_detection(self):
+        for k in keys:
+            if k.pressed:
+                return k.inp
+
+    def control_tmp(self):
+        last_pressed = 0
+        if(self.key_detection() == "1l"):
+            self.accelerate(-1)
+            self.facing_dir = "left"
+            last_pressed = time.time() * 1000
+        elif(self.key_detection() == "1r"):
+            self.accelerate(1)
+            self.facing_dir = "right"
+            last_pressed = time.time() * 1000
+        elif(self.key_detection() == "1j"):
+            self.jump()
+        else:
+            if(last_pressed + 100 < time.time()*1000):
+                self.decelerate()
+
+        self.x += self.x_vel * game_speed
+        self.y += self.y_vel * game_speed
+    ###
+    ###
 
     def control(self): #Specific to simplegui
         last_pressed = 0
         for k in keys:
             if k.pressed:
-                i = 0
                 if k.inp == "1l":
                     self.accelerate(-1)
                     self.facing_dir = "left"
@@ -369,6 +444,10 @@ class Player:
                     last_pressed = time.time() * 1000
                 elif k.inp == "1j":
                     self.jump()
+                elif k.inp == "1s":
+                    if(self.last_shot + 500 < time.time()*1000):
+                        self.last_shot = time.time() * 1000
+                        self.shoot()
 
             else:
                 if (last_pressed + 100 < time.time() * 1000):
@@ -416,7 +495,7 @@ class Enemy:
             wall_x = wall.x
             wall_y = wall.y
             wall_w = wall.width
-            if(wall_y +self.height*1.9 >= self.y >= wall_y - self.height):
+            if(wall_y +self.height*1.9 >= self.y >= wall_y - self.height*1.2):
                 if(wall_x+wall_w > self.x+self.x_vel > wall_x-wall_w):
                     self.x_vel = 0
                     if(self.x<wall_x):
@@ -666,6 +745,14 @@ current_draw_handler = draw_splash_screen
 def display(canvas):
     global current_draw_handler
     current_draw_handler(canvas)
+    for projectile in projectile_list:
+        projectile.draw(canvas)
+        if(projectile.x < 0):
+            projectile_list.remove(projectile)
+        if(projectile.x > WIDTH):
+            projectile_list.remove(projectile)
+
+    print(len(projectile_list))
 
 
 
