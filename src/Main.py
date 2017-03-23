@@ -49,9 +49,9 @@ class Sprites():
 # ----------------------------------------------------------------------------------------------------------
 #Initialising sprites
 player_one_sp = []
-for i in range(0, 1):
-    for j in range(0, 4):
-        player_one_sp.append(Sprites(player_sps, (i, j)))
+for i in range(0, 2):
+    for j in range(0, 5):
+        player_one_sp.append(Sprites(player_sps, (j, i)))
 # ----------------------------------------------------------------------------------------------------------
 # BUTTON INPUT
 # ----------------------------------------------------------------------------------------------------------
@@ -195,6 +195,10 @@ class Player:
         self.time_last_hurt = 0
         self.facing_dir = "right"
 
+        self.last_frame_time = time.time() * 1000
+        self.sps_pos = [0, 0]
+
+        self.counter = 0
 
     def draw(self, canvas): #Specific to simplegui
         global wall_array, test_player_image, enemy_list, player_one_sp
@@ -207,28 +211,36 @@ class Player:
         self.collision_y(wall_array)
         self.put_back()
 
-
     def sprite_handler(self, canvas):
-
-        sps_pos = [0, 0]
-        last_frame_time = time.time() * 1000
         if(self.on_ground):
-
             if(self.x_vel > 0):
-                if(last_frame_time + 100 < time.time() * 1000):
-                    last_frame_time = time.time() * 1000
-                    sps_pos[0] += 1
-                    sps_pos[1] = 0
+                if(self.last_frame_time + 100 < time.time() * 1000):
+                    self.last_frame_time = time.time() * 1000
+                    self.sps_pos[0] += 1
+                    self.sps_pos[1] = 0
             if(self.x_vel < 0):
-                if(last_frame_time + 100 < time.time() * 1000):
-                    last_frame_time = time.time() * 1000
-                    sps_pos[0] -= 1
-                    sps_pos[1] = 1
-            if (sps_pos[0] > 4):
-                sps_pos[0] = 0
+                if(self.last_frame_time + 100 < time.time() * 1000):
+                    self.last_frame_time = time.time() * 1000
+                    self.sps_pos[0] += 1
+                    self.sps_pos[1] = 1
             if(self.x_vel == 0):
-                sps_pos[0]
-        sp_array_pos = (sps_pos[0]+1)*(sps_pos[1]+1) - 1
+                if(self.facing_dir == "left"):
+                    self.sps_pos[0] = 0
+                    self.sps_pos[1] = 1
+                if(self.facing_dir == "right"):
+                    self.sps_pos[0] = 0
+                    self.sps_pos[1] = 0
+
+            if (self.sps_pos[0] > 3):
+                self.sps_pos[0] = 0
+        else:
+            self.sps_pos[0] = 4
+            if(self.facing_dir == "left"):
+                self.sps_pos[1] = 1
+            if(self.facing_dir == "right"):
+                self.sps_pos[1] = 0
+
+        sp_array_pos = (self.sps_pos[0])+(self.sps_pos[1]*5)
         print(sp_array_pos)
         player_one_sp[sp_array_pos].draw(canvas, (self.x, self.y), (64, 64))
 
