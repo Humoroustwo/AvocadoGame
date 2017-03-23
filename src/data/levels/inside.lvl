@@ -1,5 +1,5 @@
 name:
-background_image:
+background_image:data/images/entrance.png
 wall_image:
 walls:xpos,ypos,width,height|xpos,ypos,width,height|xpos,ypos,width,height
 min_enemies:
