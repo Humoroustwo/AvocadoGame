@@ -1,7 +1,7 @@
 name:Testing Level
 background_image:data/images/entrance.jpg
 wall_image:data/images/block.png
-walls:500,500,64,64|600,100,64,64
+walls:500,500,64,64|500,500,128,64|500,500,192,64|500,500,156,64
 min_enemies:5
 max_enemies:10
 min_time_between_spawn:10

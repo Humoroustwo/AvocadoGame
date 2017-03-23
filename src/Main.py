@@ -586,6 +586,7 @@ class Game:
         self.score = 0
         self.enemy_array = []
         self.currentbackground = self.levels[self.current_level_index].background
+        self.heart_sprite = simplegui._load_local_image("data/images/heart.png")
 
     def draw(self, canvas):  # Specific to simplegui
 
@@ -598,6 +599,9 @@ class Game:
         for wall in self.levels[self.current_level_index].wall_array:
             wall.draw(canvas)
 
+        for heart in range(0, player_one.health):
+            canvas.draw_image(self.heart_sprite, (10,10), (20,20), (70+ (45*heart), 70), (20,20))
+
         if len(self.enemy_array) == 0 and len(self.levels[self.current_level_index].enemy_queue) == 0:
             # Display game over and score
             canvas.draw_text("Level complete!", (WIDTH/2, HEIGHT/2), 50, "white")
@@ -605,7 +609,6 @@ class Game:
 
             if is_key_pressed():
                 if (self.current_level_index + 1) == len(self.levels):
-                    print("game shouldchange")
                     global current_draw_handler
                     current_draw_handler = draw_game_complete_screen
                     self.currentbackground = self.levels[self.current_level_index].background
@@ -721,7 +724,6 @@ def draw_splash_screen(canvas):
     canvas.draw_text("Welcome to AvocadoGame!", (WIDTH / 2, HEIGHT / 2), 50, "white")
     if is_key_pressed():
         current_draw_handler = game_renderer
-        print("splash shouldchange")
 
 
 def draw_game_over_screen(canvas):
@@ -751,8 +753,6 @@ def display(canvas):
             projectile_list.remove(projectile)
         if(projectile.x > WIDTH):
             projectile_list.remove(projectile)
-
-    print(len(projectile_list))
 
 
 
