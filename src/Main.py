@@ -441,6 +441,9 @@ class Game:
         self.enemy_array = []
 
     def draw(self, canvas):  # Specific to simplegui
+        # Hardcoded values? might be better to get image width and height programatically
+        canvas.draw_image(self.levels[self.current_level_index].background, (640, 360), (1280, 720), (640, 360), (1280, 720))
+
 
         player_one.draw(canvas)
         for enemy in self.enemy_array:
@@ -448,6 +451,8 @@ class Game:
 
         for wall in self.levels[self.current_level_index].wall_array:
             wall.draw(canvas)
+
+
 
         if len(self.enemy_array) == 0 and len(self.levels[self.current_level_index].enemy_queue) == 0:
             # Display game over and score
@@ -459,7 +464,6 @@ class Game:
              #       print("game shouldchange")
              #       global current_draw_handler
              #       current_draw_handler = draw_game_complete_screen
-
 
 # ----------------------------------------------------------------------------------------------------------
 # Level
@@ -474,7 +478,7 @@ class Level:
         self.level_name = self.get_level_file_field("name")
 
         # Loading textures
-        self.background = simplegui.load_image(self.get_level_file_field("background_image"))
+        self.background = simplegui._load_local_image(self.get_level_file_field("background_image"))
 
         # path = self.get_level_file_field("wall_image") BUG PREVENTS THIS WORKING!
         self.wall_texture = simplegui._load_local_image(wall_image_file_path)
@@ -575,7 +579,6 @@ def draw_splash_screen(canvas):
     canvas.draw_text("Welcome to AvocadoGame!", (WIDTH / 2, HEIGHT / 2), 50, "white")
     if is_key_pressed():
         current_draw_handler = game_renderer
-        print("splash shouldchange")
 
 
 def draw_game_over_screen(canvas):
