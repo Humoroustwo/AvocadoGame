@@ -587,7 +587,9 @@ class Game:
         self.enemy_array = []
 
     def draw(self, canvas):  # Specific to simplegui
-        canvas.draw_image(self.levels[self.current_level_index].background, (640, 360), (1280,720), (640, 360), (1280,720))
+
+        canvas.draw_image(self.levels[self.current_level_index].background, (320, 180), (640,360), (640, 360), (1280,720))
+
         player_one.draw(canvas)
         for enemy in self.enemy_array:
             enemy.draw()
@@ -605,8 +607,6 @@ class Game:
                     print("game shouldchange")
                     global current_draw_handler
                     current_draw_handler = draw_game_complete_screen
-                else:
-                    canvas.set_canvas_background(game.levels[game.current_level_index].background)
 
 
 # ----------------------------------------------------------------------------------------------------------

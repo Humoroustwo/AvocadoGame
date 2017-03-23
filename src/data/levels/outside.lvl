@@ -1,5 +1,5 @@
 name:Testing Level
-background_image:data/images/outside.jpg
+background_image:data/images/outsidescaled.jpg
 wall_image:data/images/block.png
 walls:500,500,64,64|600,100,64,64
 min_enemies:5
