@@ -587,7 +587,7 @@ class Game:
         self.enemy_array = []
 
     def draw(self, canvas):  # Specific to simplegui
-
+        canvas.draw_image(self.levels[self.current_level_index].background, (640, 360), (1280,720), (640, 360), (1280,720))
         player_one.draw(canvas)
         for enemy in self.enemy_array:
             enemy.draw()
@@ -600,11 +600,13 @@ class Game:
             canvas.draw_text("Level complete!", (WIDTH/2, HEIGHT/2), 50, "white")
             canvas.draw_text("Score: " + str(self.score), (WIDTH / 2, (HEIGHT / 2) + 100), 50, "white")
 
-            #if is_key_pressed():
-            #    if (self.current_level_index + 1) == len(self.levels):
-             #       print("game shouldchange")
-             #       global current_draw_handler
-             #       current_draw_handler = draw_game_complete_screen
+            if is_key_pressed():
+                if (self.current_level_index + 1) == len(self.levels):
+                    print("game shouldchange")
+                    global current_draw_handler
+                    current_draw_handler = draw_game_complete_screen
+                else:
+                    canvas.set_canvas_background(game.levels[game.current_level_index].background)
 
 
 # ----------------------------------------------------------------------------------------------------------
@@ -613,17 +615,14 @@ class Game:
 
 
 class Level:
-    def __init__(self, level_file_path, wall_image_file_path):
-
+    def __init__(self, level_file_path):
         # Level Metadata
-        self.raw_data = open("data/levels/" + level_file_path).readlines()
+        self.raw_data = open("data/levels/" + level_file_path).read().splitlines()
         self.level_name = self.get_level_file_field("name")
 
         # Loading textures
-        self.background = simplegui.load_image(self.get_level_file_field("background_image"))
-
-        # path = self.get_level_file_field("wall_image") BUG PREVENTS THIS WORKING!
-        self.wall_texture = simplegui._load_local_image(wall_image_file_path)
+        self.background = simplegui._load_local_image(self.get_level_file_field("background_image"))
+        self.wall_texture = simplegui._load_local_image(self.get_level_file_field("wall_image"))
         self.wall_array = self.generate_wall_array()
 
         # Enemy variable
@@ -654,13 +653,13 @@ class Level:
             wall_output.append(Wall(int(wall_params[0]), int(wall_params[1]), int(wall_params[2]), int(wall_params[3]), self.wall_texture))
 
         for i in range(0, int(WIDTH / 64) + 1):
-            wall_output.append(Wall(i * 64, HEIGHT, 64, 64, test_wall_image))
+            wall_output.append(Wall(i * 64, HEIGHT, 64, 64, self.wall_texture))
         for i in range(0, int(WIDTH / 64) + 1):
-            wall_output.append(Wall(i * 64, 0, 64, 64, test_wall_image))
+            wall_output.append(Wall(i * 64, 0, 64, 64, self.wall_texture))
         for i in range(0, int(HEIGHT / 64) + 1):
-            wall_output.append(Wall(0, i * 64, 64, 64, test_wall_image))
+            wall_output.append(Wall(0, i * 64, 64, 64, self.wall_texture))
         for i in range(0, int(HEIGHT / 64) + 1):
-            wall_output.append(Wall(WIDTH, i * 64, 64, 64, test_wall_image))
+            wall_output.append(Wall(WIDTH, i * 64, 64, 64, self.wall_texture))
         return wall_output
 
     def generate_enemies_queue(self):
@@ -690,7 +689,7 @@ class Level:
 # ----------------------------------------------------------------------------------------------------------
 
 player_one = Player(1, WIDTH / 2, HEIGHT / 2, 32, 32, 0.2, 1.5, 5, 3.5, 2)
-current_level = Level("test.lvl", "data/images/block.png")
+current_level = Level("test.lvl")
 wall_array = current_level.generate_wall_array()
 enemy_list = []
 
@@ -700,10 +699,9 @@ enemy_list = []
 
 
 levels = []
-levels.append(Level("test.lvl", "data/images/block.png"))
-# levels.append(Level("outside.lvl", "data/images/block.png"))
-# levels.append(Level("inside.lvl", "data/images/block.png"))
-# levels.append(Level("room.lvl", "data/images/block.png"))
+levels.append(Level("outside.lvl"))
+levels.append(Level("inside.lvl"))
+levels.append(Level("room.lvl"))
 
 game = Game(levels)
 
