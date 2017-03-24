@@ -154,7 +154,7 @@ class Key:
 keys = [Key('a', "1l"),#Player 1 keys
         Key('d', "1r"),
         Key('w', "1j"),
-        Key('g', "1s")]
+        Key('space', "1s")]
 
 game_keys = [Key('p', 'pause')]
 
@@ -766,7 +766,7 @@ class Btn: #The btn class simply draws a rectangle and a string using the "displ
         fit = (self.size[0]/CHARSIZE[0], self.size[1]/CHARSIZE[1])
         charScale = ((fit[0]/len(self.str))*CHARSIZE[0],((fit[0]/len(self.str))*CHARSIZE[1]))
         display_string(canvas, self.str, self.pos, charScale)
-        
+
         topLeft = (self.pos[0] - self.size[0] / 2, self.pos[1] - self.size[1] / 2)
         topRight = (self.pos[0] + self.size[0] / 2, self.pos[1] - self.size[1] / 2)
         botLeft = (self.pos[0] - self.size[0] / 2, self.pos[1] + self.size[1] / 2)
@@ -843,7 +843,7 @@ class Game:
         display_string(canvas, "INSTRUCTIONS", (WIDTH / 2, HEIGHT / 6), (CHARSIZE[0], CHARSIZE[1]))
         display_string(canvas, "PRESS A AND D TO MOVE LEFT AND RIGHT", (WIDTH / 2, 10*HEIGHT / 32), (CHARSIZE[0] / 3, CHARSIZE[1] / 3))
         display_string(canvas, "PRESS W TO JUMP", (WIDTH / 2, 12 * HEIGHT / 32), (CHARSIZE[0] / 3, CHARSIZE[1] / 3))
-        display_string(canvas, "PRESS G TO SHOOT", (WIDTH / 2, 14 * HEIGHT / 32), (CHARSIZE[0] / 3, CHARSIZE[1] / 3))
+        display_string(canvas, "PRESS SPACE TO SHOOT", (WIDTH / 2, 14 * HEIGHT / 32), (CHARSIZE[0] / 3, CHARSIZE[1] / 3))
         display_string(canvas, "PRESS P TO PAUSE", (WIDTH / 2, 16 * HEIGHT / 32), (CHARSIZE[0] / 3, CHARSIZE[1] / 3))
         self.btn_return.draw(canvas)
 
