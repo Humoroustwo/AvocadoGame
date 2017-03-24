@@ -13,17 +13,18 @@ WIDTH = 1280
 HEIGHT = 720
 
 #SPRITE CONSTANTS
-SP_SIZE = [64, 64]
+SP_SIZE = [64, 64] #Size of character sprites
 SP_CENTER = [32, 32]
-CHARSIZE = [64, 96]
+CHARSIZE = [64, 96] #Size of alphanumeric character sprites
 CHARCENTER = [32, 48]
-CHARDIM = [16, 10]
+CHARDIM = [16, 10] #Size of alphanumeric sprite dimensions
 
 
 #IMAGES
 test_player_image = simplegui._load_local_image("data/images/sprite.png")
 test_wall_image = simplegui._load_local_image("data/images/block.png")
 player_sps = simplegui._load_local_image("data/images/character_sheet.png")
+enemy_sps = simplegui._load_local_image("data/images/enemy_sheet.png")
 player_projectile = simplegui._load_local_image("data/images/PlayerProjectile.png")
 char = simplegui._load_local_image("data/images/alpha.png")
 heart = simplegui._load_local_image("data/images/heart.png")
@@ -125,6 +126,11 @@ player_one_sp = []
 for i in range(0, 2):
     for j in range(0, 5):
         player_one_sp.append(Sprites(player_sps, (j, i)))
+
+enemy_sp = []
+for i in range(0, 2):
+    for j in range(0, 5):
+        enemy_sp.append(Sprites(enemy_sps, (j, i)))
 
 # ----------------------------------------------------------------------------------------------------------
 # BUTTON INPUT
@@ -329,7 +335,7 @@ class Player:
 
     def draw(self, canvas): #Specific to simplegui
         global wall_array, test_player_image, enemy_list
-        canvas.draw_image(test_player_image, SP_CENTER, SP_SIZE, (self.x, self.y), SP_SIZE)
+        #canvas.draw_image(test_player_image, SP_CENTER, SP_SIZE, (self.x, self.y), SP_SIZE)
         self.control()
         self.sprite_handler(canvas)
         self.touch_enemy(enemy_list)
@@ -509,6 +515,43 @@ class Enemy:
         self.on_ground = False
         self.max_jump = max_jump
         self.time_last_col = 0
+        self.sps_pos = [0,0]
+        self.facing_dir = "right"
+        self.last_frame_time = 0
+
+    def sprite_handler(self, canvas):
+        if(self.on_ground and game_speed > 0):
+            if(self.x_vel > 0):
+                self.facing_dir = "right"
+                if(self.last_frame_time + 100 < time.time() * 1000):
+                    self.last_frame_time = time.time() * 1000
+                    self.sps_pos[0] += 1
+                    self.sps_pos[1] = 0
+            if(self.x_vel < 0):
+                self.facing_dir = "left"
+                if(self.last_frame_time + 100 < time.time() * 1000):
+                    self.last_frame_time = time.time() * 1000
+                    self.sps_pos[0] += 1
+                    self.sps_pos[1] = 1
+            if(self.x_vel == 0):
+                if(self.facing_dir == "left"):
+                    self.sps_pos[0] = 0
+                    self.sps_pos[1] = 1
+                if(self.facing_dir == "right"):
+                    self.sps_pos[0] = 0
+                    self.sps_pos[1] = 0
+
+            if (self.sps_pos[0] > 3):
+                self.sps_pos[0] = 0
+        else:
+            self.sps_pos[0] = 4
+            if(self.facing_dir == "left" and game_speed > 0):
+                self.sps_pos[1] = 1
+            if(self.facing_dir == "right" and game_speed > 0):
+                self.sps_pos[1] = 0
+
+        sp_array_pos = (self.sps_pos[0])+(self.sps_pos[1]*5)
+        enemy_sp[sp_array_pos].draw(canvas, (self.x, self.y), (64, 64))
 
     def basic_ai(self):
         if(self.x_vel == 0):
@@ -593,7 +636,8 @@ class Enemy:
     def draw(self, canvas):
         global wall_array
         global test_player_image
-        canvas.draw_image(test_wall_image, SP_CENTER, SP_SIZE, (self.x, self.y), SP_SIZE)
+        #canvas.draw_image(test_wall_image, SP_CENTER, SP_SIZE, (self.x, self.y), SP_SIZE)
+        self.sprite_handler(canvas)
         self.gravity()
         self.basic_ai()
         self.put_back()
@@ -706,7 +750,7 @@ for i in range(0, 6):
 # Button class
 # ----------------------------------------------------------------------------------------------------------
 
-class Btn:
+class Btn: #The btn class simply draws a rectangle and a string using the "display_string" method
     def __init__(self, btStr, pos, size, state):
         self.game_state = state
         self.hide = False
@@ -758,7 +802,7 @@ class Game:
         self.btn_med = Btn('  MEDIUM  ', (WIDTH / 2, 9 * HEIGHT / 16), (WIDTH / 4, HEIGHT / 10), "med")
         self.btn_hard = Btn('   HARD   ', (WIDTH / 2, 12 * HEIGHT / 16), (WIDTH / 4, HEIGHT / 10), "hard")
         self.btn_return = Btn('BACK TO MENU', (WIDTH / 2, 12 * HEIGHT / 16), (WIDTH / 4, HEIGHT / 10), "start")
-        self.btn_diff = Btn('INSTRUCTIONS', (WIDTH / 2, 11 * HEIGHT / 16), (WIDTH / 4, HEIGHT / 10), "game")
+        self.btn_inst = Btn('INSTRUCTIONS', (WIDTH / 2, 14 * HEIGHT / 16-16), (WIDTH / 4, HEIGHT / 10), "inst")
         self.enemy_counter = 10
         self.last_difficulty = 10
         self.spawn_frequency = 6
@@ -778,6 +822,7 @@ class Game:
         global enemy_list, global_enemy_counter
         display_string(canvas, "AVACADO GAME", (WIDTH/2, HEIGHT/4), CHARSIZE)
         self.btn_start.draw(canvas)
+        self.btn_inst.draw(canvas)
         self.enemy_counter = self.last_difficulty
         global_enemy_counter = self.last_difficulty
         self.btn_difficulty.draw(canvas)
@@ -788,6 +833,14 @@ class Game:
             p.y = HEIGHT/2
             p.x_vel = 1
             p.y_vel = 0
+
+    def instructions(self, canvas):
+        display_string(canvas, "INSTRUCTIONS", (WIDTH / 2, HEIGHT / 6), (CHARSIZE[0], CHARSIZE[1]))
+        display_string(canvas, "PRESS A AND D TO MOVE LEFT AND RIGHT", (WIDTH / 2, 10*HEIGHT / 32), (CHARSIZE[0] / 3, CHARSIZE[1] / 3))
+        display_string(canvas, "PRESS W TO JUMP", (WIDTH / 2, 12 * HEIGHT / 32), (CHARSIZE[0] / 3, CHARSIZE[1] / 3))
+        display_string(canvas, "PRESS G TO SHOOT", (WIDTH / 2, 14 * HEIGHT / 32), (CHARSIZE[0] / 3, CHARSIZE[1] / 3))
+        display_string(canvas, "PRESS P TO PAUSE", (WIDTH / 2, 16 * HEIGHT / 32), (CHARSIZE[0] / 3, CHARSIZE[1] / 3))
+        self.btn_return.draw(canvas)
 
     def difficulty(self, canvas):
         display_string(canvas, "DIFFUCULTY SETTINGS", (WIDTH / 2, HEIGHT / 6), CHARSIZE)
@@ -871,6 +924,8 @@ class Game:
             self.med()
         if(game_state == "hard"):
             self.hard()
+        if(game_state == "inst"):
+            self.instructions(canvas)
         if(game_state == "game"):
             self.game(canvas)
         if(game_state == "lose"):
