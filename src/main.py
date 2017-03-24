@@ -54,6 +54,7 @@ class Character:
 
 
 def display_string(canvas, strn, pos, size):
+    # A simple function that calculates the position of each character to be drawn by the "Character" function
     strList = list(strn)
     offset = size[0]/2
     for j in range(0, len(strList)):
@@ -762,15 +763,18 @@ class Btn: #The btn class simply draws a rectangle and a string using the "displ
 
     def draw(self, canvas):
         global CHARSIZE
+        fit = (self.size[0]/CHARSIZE[0], self.size[1]/CHARSIZE[1])
+        charScale = ((fit[0]/len(self.str))*CHARSIZE[0],((fit[0]/len(self.str))*CHARSIZE[1]))
+        display_string(canvas, self.str, self.pos, charScale)
+        
         topLeft = (self.pos[0] - self.size[0] / 2, self.pos[1] - self.size[1] / 2)
         topRight = (self.pos[0] + self.size[0] / 2, self.pos[1] - self.size[1] / 2)
         botLeft = (self.pos[0] - self.size[0] / 2, self.pos[1] + self.size[1] / 2)
         botRight = (self.pos[0] + self.size[0] / 2, self.pos[1] + self.size[1] / 2)
         btnPos = (topLeft, topRight, botRight, botLeft)
-        fit = (self.size[0]/CHARSIZE[0], self.size[1]/CHARSIZE[1])
-        charScale = ((fit[0]/len(self.str))*CHARSIZE[0],((fit[0]/len(self.str))*CHARSIZE[1]))
+
         canvas.draw_polygon(btnPos, 4, 'White')
-        display_string(canvas, self.str, self.pos, charScale)
+
         self.detectClick()
 
     def detectClick(self):
@@ -826,7 +830,7 @@ class Game:
         self.enemy_counter = self.last_difficulty
         global_enemy_counter = self.last_difficulty
         self.btn_difficulty.draw(canvas)
-        game_speed = 0
+        game_speed = 1
         enemy_list[:] = []
         for p in player_list:
             p.health = 3
