@@ -819,13 +819,14 @@ class Game:
                         game_speed = 1
 
     def start_screen(self, canvas):
-        global enemy_list, global_enemy_counter
+        global enemy_list, global_enemy_counter, game_speed
         display_string(canvas, "AVACADO GAME", (WIDTH/2, HEIGHT/4), CHARSIZE)
         self.btn_start.draw(canvas)
         self.btn_inst.draw(canvas)
         self.enemy_counter = self.last_difficulty
         global_enemy_counter = self.last_difficulty
         self.btn_difficulty.draw(canvas)
+        game_speed = 0
         enemy_list[:] = []
         for p in player_list:
             p.health = 3
