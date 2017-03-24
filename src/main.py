@@ -26,6 +26,7 @@ test_wall_image = simplegui._load_local_image("data/images/block.png")
 player_sps = simplegui._load_local_image("data/images/character_sheet.png")
 player_projectile = simplegui._load_local_image("data/images/PlayerProjectile.png")
 char = simplegui._load_local_image("data/images/alpha.png")
+heart = simplegui._load_local_image("data/images/heart.png")
 
 #VARIABLES
 game_speed = 1
@@ -148,12 +149,18 @@ keys = [Key('a', "1l"),#Player 1 keys
         Key('w', "1j"),
         Key('g', "1s")]
 
+game_keys = [Key('p', 'pause')]
+
 def key_down(key_code):
     for k in keys:
+        k.check_down(key_code)
+    for k in game_keys:
         k.check_down(key_code)
 
 def key_up(key_code):
     for k in keys:
+        k.check_up(key_code)
+    for k in game_keys:
         k.check_up(key_code)
 
 # ----------------------------------------------------------------------------------------------------------
@@ -289,7 +296,7 @@ class Player:
         self.counter = 0
 
     def sprite_handler(self, canvas):
-        if(self.on_ground):
+        if(self.on_ground and game_speed > 0):
             if(self.x_vel > 0):
                 if(self.last_frame_time + 100 < time.time() * 1000):
                     self.last_frame_time = time.time() * 1000
@@ -312,9 +319,9 @@ class Player:
                 self.sps_pos[0] = 0
         else:
             self.sps_pos[0] = 4
-            if(self.facing_dir == "left"):
+            if(self.facing_dir == "left" and game_speed > 0):
                 self.sps_pos[1] = 1
-            if(self.facing_dir == "right"):
+            if(self.facing_dir == "right" and game_speed > 0):
                 self.sps_pos[1] = 0
 
         sp_array_pos = (self.sps_pos[0])+(self.sps_pos[1]*5)
@@ -344,9 +351,9 @@ class Player:
 
     def shoot(self):
         global player_projectile_list
-        if(self.facing_dir == "left"):
+        if(self.facing_dir == "left" and game_speed > 0):
             player_projectile_list.append(Player_Projectiles(self.x - self.width, self.y+self.height*0.3, -1))
-        if(self.facing_dir == "right"):
+        if(self.facing_dir == "right"and game_speed > 0):
             player_projectile_list.append(Player_Projectiles(self.x + self.width, self.y+self.height*0.3, 1))
 
     def touch_enemy(self, enemy_list):
@@ -489,7 +496,7 @@ class Enemy:
     def __init__(self, x, y, width, height, acc, max_speed, max_jump):
         self.x = x
         self.y = y
-        self.x_vel = 4
+        self.x_vel = 4*((2*random.randint(0,1))-1)
         self.y_vel = 0
         self.set_speed = 4
         self.width = width
@@ -509,7 +516,7 @@ class Enemy:
                 self.time_last_col = time.time()*1000
                 self.set_speed = -self.set_speed
                 self.x_vel = self.set_speed*game_speed
-        self.x += self.x_vel
+        self.x += self.x_vel*game_speed
 
     def put_back(self):
         if(self.y > HEIGHT+2*self.height):
@@ -741,23 +748,46 @@ class Btn:
 
 game_state = "start"
 global_enemy_counter = 10
+last_paused = 0
 
 class Game:
     def __init__(self):
-        self.btn_start = Btn('  START  ', (WIDTH / 2, 8*HEIGHT / 16), (WIDTH / 4, HEIGHT / 10), "game")
-        self.btn_difficulty = Btn('DIFFICULTY', (WIDTH / 2, 11*HEIGHT / 16), (WIDTH / 4, HEIGHT / 10), "difficulty")
+        self.btn_start = Btn('  START  ', (WIDTH / 2, 8*HEIGHT/16-16), (WIDTH / 4, HEIGHT / 10), "game")
+        self.btn_difficulty = Btn('DIFFICULTY', (WIDTH / 2, 11*HEIGHT / 16-16), (WIDTH / 4, HEIGHT / 10), "difficulty")
         self.btn_easy = Btn('   EASY   ', (WIDTH / 2, 6 * HEIGHT / 16), (WIDTH / 4, HEIGHT / 10), "easy")
         self.btn_med = Btn('  MEDIUM  ', (WIDTH / 2, 9 * HEIGHT / 16), (WIDTH / 4, HEIGHT / 10), "med")
         self.btn_hard = Btn('   HARD   ', (WIDTH / 2, 12 * HEIGHT / 16), (WIDTH / 4, HEIGHT / 10), "hard")
-        self.enemy_counter = 0
-        self.spawn_frequency = 0
+        self.btn_return = Btn('BACK TO MENU', (WIDTH / 2, 12 * HEIGHT / 16), (WIDTH / 4, HEIGHT / 10), "start")
+        self.btn_diff = Btn('INSTRUCTIONS', (WIDTH / 2, 11 * HEIGHT / 16), (WIDTH / 4, HEIGHT / 10), "game")
+        self.enemy_counter = 10
+        self.last_difficulty = 10
+        self.spawn_frequency = 6
+
+    def pause(self):
+        global game_speed, last_paused
+        for k in game_keys:
+            if k.pressed:
+                if time.time()*1000 > last_paused+200:
+                    last_paused = time.time()*1000
+                    if game_speed > 0:
+                        game_speed = 0
+                    else:
+                        game_speed = 1
 
     def start_screen(self, canvas):
         global enemy_list, global_enemy_counter
         display_string(canvas, "AVACADO GAME", (WIDTH/2, HEIGHT/4), CHARSIZE)
         self.btn_start.draw(canvas)
+        self.enemy_counter = self.last_difficulty
+        global_enemy_counter = self.last_difficulty
         self.btn_difficulty.draw(canvas)
         enemy_list[:] = []
+        for p in player_list:
+            p.health = 3
+            p.x = WIDTH/2
+            p.y = HEIGHT/2
+            p.x_vel = 1
+            p.y_vel = 0
 
     def difficulty(self, canvas):
         display_string(canvas, "DIFFUCULTY SETTINGS", (WIDTH / 2, HEIGHT / 6), CHARSIZE)
@@ -770,6 +800,7 @@ class Game:
         global_enemy_counter = 10
         self.enemy_counter = 10
         self.spawn_frequency = 6
+        self.last_difficulty = 10
         game_state = "start"
 
     def med(self):
@@ -777,6 +808,7 @@ class Game:
         global_enemy_counter = 20
         self.enemy_counter = 20
         self.spawn_frequency = 4
+        self.last_difficulty = 20
         game_state = "start"
 
     def hard(self):
@@ -784,17 +816,19 @@ class Game:
         global_enemy_counter = 30
         self.enemy_counter = 30
         self.spawn_frequency = 2
+        self.last_difficulty = 30
         game_state = "start"
 
-
     def game(self, canvas):
-        global player_list, wall_array, enemy_list
+        global player_list, wall_array, enemy_list, game_state
         for players in player_list:
             players.draw(canvas)
+            if(players.health == 0):
+                game_state = "lose"
         for wall in wall_array:
             wall.draw(canvas)
-        random_delay = time.time()*1000 + random.randint(0,0)
-        if(random_delay < time.time()*1000):
+        random_delay = time.time()*1000 + random.randint(0,self.spawn_frequency)
+        if(random_delay < time.time()*1000 and game_speed > 0):
             if(self.enemy_counter > 0):
                 self.enemy_counter += -1
                 enemy_list.append(Enemy(WIDTH / 2, 64, 32, 32, 0.2, 1.6, 10))
@@ -802,8 +836,29 @@ class Game:
             enemy.draw(canvas)
         for p_proj in player_projectile_list:
             p_proj.draw(canvas)
-        display_renemies(canvas)
 
+        if(global_enemy_counter == 0):
+            game_state = "win"
+        self.draw_lives(canvas)
+
+        if(game_speed > 0):
+            display_renemies(canvas)
+
+        self.pause()
+        self.pause_menu(canvas)
+
+    def lose(self, canvas):
+        display_string(canvas, "GAME OVER", (WIDTH / 2, 8*HEIGHT / 16), CHARSIZE)
+        self.btn_return.draw(canvas)
+
+    def win(self, canvas):
+        display_string(canvas, "YOU WIN", (WIDTH / 2, 8*HEIGHT / 16), CHARSIZE)
+        self.btn_return.draw(canvas)
+
+    def pause_menu(self, canvas):
+        if(game_speed == 0):
+            display_string(canvas, "PAUSED", (WIDTH / 2, 8 * HEIGHT / 16), CHARSIZE)
+            self.btn_return.draw(canvas)
 
     def draw(self, canvas): #Specific to simplegui
         if(game_state == "start"):
@@ -818,7 +873,17 @@ class Game:
             self.hard()
         if(game_state == "game"):
             self.game(canvas)
+        if(game_state == "lose"):
+            self.lose(canvas)
+        if(game_state == "win"):
+            self.win(canvas)
 
+
+
+    def draw_lives(self, canvas):
+        for p in player_list:
+            for i in range(0, p.health):
+                canvas.draw_image(heart, (32, 32), (64,64), (32+i*64, 32), (64,64))
 
 # ----------------------------------------------------------------------------------------------------------
 # MAIN DISPLAY
